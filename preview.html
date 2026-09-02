@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📹 短视频 Feed 流</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", sans-serif; background: #f5f5f5; padding: 20px; max-width: 600px; margin: 0 auto; }
+  h1 { text-align: center; margin-bottom: 20px; }
+  .card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .title { font-size: 17px; font-weight: bold; margin-bottom: 6px; }
+  .meta { color: #888; font-size: 13px; margin-bottom: 6px; }
+  .url { color: #6366f1; font-size: 13px; word-break: break-all; }
+  .empty { text-align: center; color: #aaa; padding: 40px; }
+</style>
+</head>
+<body>
+  <h1>📹 短视频 Feed 流</h1>
+  <div id="list"><div class="empty">加载中...</div></div>
+
+<script>
+fetch('/videos')
+  .then(r => r.json())
+  .then(videos => {
+    const list = document.getElementById('list');
+    if (!videos.length) {
+      list.innerHTML = '<div class="empty">还没有视频，去发一个吧～</div>';
+      return;
+    }
+    list.innerHTML = videos.map(v => `
+      <div class="card">
+        <div class="title">${v.title}</div>
+        <div class="meta">@${v.username} · 点赞 ${v.likes_count}</div>
+        <div class="url">${v.play_url}</div>
+      </div>`).join('');
+  })
+  .catch(e => {
+    document.getElementById('list').innerHTML = '<div class="empty">加载失败，后端启动了吗？</div>';
+  });
+</script>
+</body>
+</html>

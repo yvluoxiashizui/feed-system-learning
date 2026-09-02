@@ -1,0 +1,4 @@
+-- 给 feed 项目建数据库
+CREATE DATABASE IF NOT EXISTS feed CHARACTER SET utf8mb4;
+GRANT ALL PRIVILEGES ON feed.* TO 'goapp'@'localhost';
+FLUSH PRIVILEGES;
