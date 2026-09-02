@@ -1,57 +1,75 @@
-# 短视频 Feed 流系统（简化版）
+# feedsystem
 
-一个学习后端的练手项目。参考了 [LeoninCS/feedsystem_video_go](https://github.com/LeoninCS/feedsystem_video_go) 做了个简化版，想练练 Gin、GORM、MySQL、JWT 这些。
+基于 Go + Gin 的短视频 Feed 流系统（简化版）。参考 [LeoninCS/feedsystem_video_go](https://github.com/LeoninCS/feedsystem_video_go) 实现核心闭环：用户注册登录、视频发布、Feed 流浏览。简化版暂未包含原项目的 Redis 缓存、RabbitMQ 异步、私信、通知等模块。
 
-现在还在慢慢做，先把核心流程走通。
+## 功能
 
-## 目前能做的
+| 模块 | 功能 |
+|------|------|
+| 用户 | 注册、登录、JWT 签发与鉴权 |
+| 视频 | 发布视频（需登录）、Feed 流列表（分页） |
+| 中间件 | 请求日志、Auth 鉴权 |
 
-- 注册 / 登录（密码是 bcrypt 加密后存的，不会存明文）
-- 登录之后才能发视频（用 JWT 验证）
-- 刷视频列表，带分页
+## 技术栈
 
-## 用的东西
+| 分类 | 技术 |
+|------|------|
+| 语言 | Go |
+| Web 框架 | Gin |
+| 数据库 | MySQL + GORM |
+| 认证 | JWT（golang-jwt） |
 
-- Go + Gin：处理 HTTP 请求，路由、中间件
-- GORM + MySQL：结构体对应数据库表，增删改查
-- JWT：登录后发个 token，之后请求带上它验证身份
+## 本地开发
 
-## 怎么跑起来
-
-1. 本地装好 MySQL，建一个库：
-```sql
-CREATE DATABASE feed CHARACTER SET utf8mb4;
-```
-2. 数据库连接配置在 main.go 里（开发用的）
-3. 跑起来：
 ```bash
-go run .
-```
-4. 浏览器打开 http://localhost:8080/ 能看到一个简单预览页
+# 1. 建库（数据库连接配置在 main.go，本地开发使用）
+mysql -u root -e "CREATE DATABASE feed CHARACTER SET utf8mb4;"
 
-## 目录
+# 2. 启动
+go run .
+
+# 3. 预览页（刷 Feed）
+# 浏览器打开 http://localhost:8080/
+```
+
+## 接口清单
+
+### 用户
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| POST | `/register` | 否 | 注册（用户名只能字母数字，密码 bcrypt 加密） |
+| POST | `/login` | 否 | 登录，返回 JWT token |
+| GET | `/user?id=1` | 否 | 按 ID 查用户 |
+
+### 视频
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| POST | `/video/publish` | JWT | 发布视频 |
+| GET | `/videos?limit=&offset=` | 否 | Feed 流列表（分页，最新在前） |
+
+### 测试
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| GET | `/auth-test` | JWT | 测试 Auth 中间件 |
+
+## 目录结构
 
 ```
 feed/
-├── main.go          # 入口：连库、建表、路由
-├── models/          # 数据模型（User、Video）
-├── handlers/        # 接口逻辑（注册登录、发视频、中间件）
-└── preview.html     # 简单预览页
+├── main.go              # 入口：连接数据库、建表、注册路由
+├── models/              # 数据模型（结构体 ↔ 数据库表）
+│   ├── user.go          # User 用户表
+│   └── video.go         # Video 视频表
+├── handlers/            # 业务处理
+│   ├── user.go          # 注册 / 登录 / 查用户
+│   ├── video.go         # 发布视频 / Feed 列表
+│   ├── auth.go          # JWT 鉴权中间件
+│   └── logger.go        # 日志中间件
+└── preview.html         # Feed 预览页
 ```
 
-## 还在做 / 想做的
+## 待办
 
 - [ ] 视频详情
 - [ ] 点赞
 - [ ] 关注
-
-## 踩过的坑（自己记一下）
-
-- GORM 的 `db.Create()` 后面要加 `.Error` 才能拿到错误，不然会"存进去了还报错"
-- 路由注册要写在 main 顶层，不能写进 handler 函数里面
-- json 标签要用小写（`json:"title"`），写成大写 `JSON` 会绑定不上
-- 新加的模型要记得加进 `AutoMigrate`，不然表不会建
-
-## 说明
-
-数据库账号密码目前是写死在代码里的开发配置，以后做成真实项目会用环境变量。
