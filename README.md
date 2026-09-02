@@ -1,75 +1,57 @@
-# 📹 短视频 Feed 流系统（简化版）
+# 短视频 Feed 流系统（简化版）
 
-基于 Go + Gin + GORM + MySQL 的短视频 Feed 流后端，参考 [feedsystem_video_go](https://github.com/LeoninCS/feedsystem_video_go) 做的**简化学习项目**。通过动手实现核心闭环，学习 Gin / GORM / JWT 等 Web 后端知识。
+一个学习后端的练手项目。参考了 [LeoninCS/feedsystem_video_go](https://github.com/LeoninCS/feedsystem_video_go) 做了个简化版，想练练 Gin、GORM、MySQL、JWT 这些。
 
-## 技术栈
+现在还在慢慢做，先把核心流程走通。
 
-| 技术 | 用途 |
-|------|------|
-| Go + Gin | Web 框架（路由 / handler / 中间件） |
-| GORM + MySQL | 数据持久化（结构体 ↔ 数据库表） |
-| JWT | 无状态认证（登录 / 鉴权中间件） |
+## 目前能做的
 
-## 已完成功能
+- 注册 / 登录（密码是 bcrypt 加密后存的，不会存明文）
+- 登录之后才能发视频（用 JWT 验证）
+- 刷视频列表，带分页
 
-- [x] 用户注册 / 登录（bcrypt 密码加密，用户名格式校验）
-- [x] JWT 签发 + Auth 鉴权中间件（保护需要登录的接口）
-- [x] 发布视频（需登录）
-- [x] Feed 流（分页浏览，最新在前）
+## 用的东西
 
-## 进行中
+- Go + Gin：处理 HTTP 请求，路由、中间件
+- GORM + MySQL：结构体对应数据库表，增删改查
+- JWT：登录后发个 token，之后请求带上它验证身份
+
+## 怎么跑起来
+
+1. 本地装好 MySQL，建一个库：
+```sql
+CREATE DATABASE feed CHARACTER SET utf8mb4;
+```
+2. 数据库连接配置在 main.go 里（开发用的）
+3. 跑起来：
+```bash
+go run .
+```
+4. 浏览器打开 http://localhost:8080/ 能看到一个简单预览页
+
+## 目录
+
+```
+feed/
+├── main.go          # 入口：连库、建表、路由
+├── models/          # 数据模型（User、Video）
+├── handlers/        # 接口逻辑（注册登录、发视频、中间件）
+└── preview.html     # 简单预览页
+```
+
+## 还在做 / 想做的
 
 - [ ] 视频详情
 - [ ] 点赞
 - [ ] 关注
 
-## 运行
+## 踩过的坑（自己记一下）
 
-```bash
-# 1. 需要本地 MySQL，建库（开发环境配置在 main.go）
-CREATE DATABASE feed CHARACTER SET utf8mb4;
+- GORM 的 `db.Create()` 后面要加 `.Error` 才能拿到错误，不然会"存进去了还报错"
+- 路由注册要写在 main 顶层，不能写进 handler 函数里面
+- json 标签要用小写（`json:"title"`），写成大写 `JSON` 会绑定不上
+- 新加的模型要记得加进 `AutoMigrate`，不然表不会建
 
-# 2. 启动
-go run .
+## 说明
 
-# 3. 预览页（网页刷视频）
-# 浏览器打开 http://localhost:8080/
-
-# 4. 接口测试示例
-# 注册
-curl -X POST http://localhost:8080/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"test","password":"123456"}'
-
-# 登录拿 token
-curl -X POST http://localhost:8080/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"test","password":"123456"}'
-
-# 带 token 发布视频
-curl -X POST http://localhost:8080/video/publish \
-  -H "Content-Type: application/json" \
-  -H "Authorization: <你的token>" \
-  -d '{"title":"我的视频","play_url":"/videos/1.mp4"}'
-
-# 刷 Feed（分页）
-curl "http://localhost:8080/videos?limit=10&offset=0"
-```
-
-## 目录结构
-
-```
-feed/
-├── main.go              # 入口：连数据库、建表、注册路由、启动
-├── models/              # 数据模型（结构体 = 数据库表）
-│   ├── user.go
-│   └── video.go
-├── handlers/            # 业务处理（handler / 中间件）
-│   ├── user.go          # 注册 / 登录 / 查用户
-│   ├── video.go         # 发布视频 / Feed 列表
-│   ├── logger.go        # 日志中间件
-│   └── auth.go          # JWT 鉴权中间件
-└── preview.html         # 预览网页
-```
-
-> 说明：数据库账号密码等配置目前为本地开发硬编码（见 main.go），生产环境应改用环境变量。
+数据库账号密码目前是写死在代码里的开发配置，以后做成真实项目会用环境变量。
