@@ -12,20 +12,20 @@ import (
 )
 
 func main() {
-	// 1. 连接 MySQL（第10课学的）
+	// 连接数据库（开发配置，生产环境建议改用环境变量）
 	dsn := "goapp:goapp123@tcp(127.0.0.1:3306)/feed?charset=utf8mb4&parseTime=True"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("连接数据库失败: ", err)
 	}
 
-	// 2. 自动建表（第10课学的）
-	db.AutoMigrate(&models.User{},&models.Video{})
+	// 自动建表
+	db.AutoMigrate(&models.User{}, &models.Video{})
 
-	// 3. 把数据库连接交给 handlers 层（分层架构：main 只管组装）
+	// 数据库连接注入 handlers 层
 	handlers.SetDB(db)
 
-	// 4. 注册路由（第9课学的）
+	// 注册路由
 	r := gin.Default()
 	r.Use(handlers.Logger)
 	r.POST("/register", handlers.Register)
@@ -38,9 +38,9 @@ func main() {
 	r.POST("/video/publish", handlers.Auth, handlers.PublishVideo)
 	r.GET("/videos", handlers.ListVideos)
 
-	// 预览网页：访问 http://localhost:8080/ 就是这个页面
+	// Feed 预览页
 	r.StaticFile("/", "preview.html")
 
-	// 5. 启动服务
+	// 启动服务
 	r.Run(":8080")
 }
