@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -27,12 +26,12 @@ func Register(c *gin.Context) {
 		Password string `json:"password"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		c.JSON(400, gin.H{"error": "参数错误"})
 		return
 	}
 
 	if input.Username == "" || input.Password == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "用户名和密码不能为空"})
+		c.JSON(400, gin.H{"error": "用户名和密码不能为空"})
 		return
 	}
 
@@ -41,7 +40,7 @@ func Register(c *gin.Context) {
 		isLetter := (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
 		isDigit := ch >= '0' && ch <= '9'
 		if !isLetter && !isDigit {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "用户名只能包含字母和数字"})
+			c.JSON(400, gin.H{"error": "用户名只能包含字母和数字"})
 			return
 		}
 	}
@@ -49,17 +48,17 @@ func Register(c *gin.Context) {
 	// 密码 bcrypt 加密后存储
 	hashed, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "加密失败"})
+		c.JSON(500, gin.H{"error": "加密失败"})
 		return
 	}
 
 	user := models.User{Username: input.Username, Password: string(hashed)}
 	if err := db.Create(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "用户名已存在"})
+		c.JSON(400, gin.H{"error": "用户名已存在"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"id": user.ID, "username": user.Username})
+	c.JSON(200, gin.H{"id": user.ID, "username": user.Username})
 }
 
 // Login 登录，成功签发 JWT
@@ -69,18 +68,18 @@ func Login(c *gin.Context) {
 		Password string `json:"password"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		c.JSON(400, gin.H{"error": "参数错误"})
 		return
 	}
 
 	var user models.User
 	if err := db.Where("username = ?", input.Username).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
+		c.JSON(401, gin.H{"error": "用户名或密码错误"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
+		c.JSON(401, gin.H{"error": "用户名或密码错误"})
 		return
 	}
 
@@ -92,11 +91,11 @@ func Login(c *gin.Context) {
 	})
 	tokenString, err := token.SignedString([]byte("feed-secret-key"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "签发失败"})
+		c.JSON(500, gin.H{"error": "签发失败"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": tokenString, "user_id": user.ID, "username": user.Username})
+	c.JSON(200, gin.H{"token": tokenString, "user_id": user.ID, "username": user.Username})
 }
 
 // GetUser 按 ID 查用户
@@ -105,8 +104,8 @@ func GetUser(c *gin.Context) {
 
 	var user models.User
 	if err := db.Where("id = ?", id).First(&user).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "用户不存在"})
+		c.JSON(404, gin.H{"error": "用户不存在"})
 		return
 	}
-	c.JSON(http.StatusOK, user)
+	c.JSON(200, user)
 }

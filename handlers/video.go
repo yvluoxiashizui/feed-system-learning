@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"feed/models"
 )
@@ -19,14 +19,14 @@ func PublishVideo(c *gin.Context) {
 		PlayURL string `json:"play_url"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		c.JSON(400, gin.H{"error": "参数错误"})
 		return
 	}
 
 	// 查作者，取用户名
 	var author models.User
 	if err := db.Where("id = ?", uid).First(&author).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户不存在"})
+		c.JSON(401, gin.H{"error": "用户不存在"})
 		return
 	}
 
@@ -37,11 +37,11 @@ func PublishVideo(c *gin.Context) {
 		PlayURL:  input.PlayURL,
 	}
 	if err := db.Create(&video).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "发布失败"})
+		c.JSON(500, gin.H{"error": "发布失败"})
 		return
 	}
 
-	c.JSON(http.StatusOK, video)
+	c.JSON(200, video)
 }
 
 // ListVideos Feed 流列表，分页，最新在前
@@ -51,15 +51,42 @@ func ListVideos(c *gin.Context) {
 
 	var videos []models.Video
 	db.Order("id DESC").Limit(limit).Offset(offset).Find(&videos)
-	c.JSON(http.StatusOK, videos)
+	c.JSON(200, videos)
 }
 
+// GetVideoDetail 视频详情
 func GetVideoDetail(c *gin.Context) {
 	id := c.Query("id")
+
 	var video models.Video
-	if err := db.Where("id = ?",id).First(&video).Error;err != nil{
-		c.JSON(404,gin.H{"error":"视频不存在"})
+	if err := db.Where("id = ?", id).First(&video).Error; err != nil {
+		c.JSON(404, gin.H{"error": "视频不存在"})
 		return
 	}
-	c.JSON(http.StatusOK, video)
+	c.JSON(200, video)
+}
+
+// LikeVideo 点赞（需登录），同一用户不能重复点赞
+func LikeVideo(c *gin.Context) {
+	userID := c.GetString("user_id")
+	uid, _ := strconv.ParseUint(userID, 10, 64)
+
+	var input struct {
+		VideoID uint `json:"video_id"`
+	}
+	c.ShouldBindJSON(&input)
+
+	like := models.Like{
+		UserID:uint(uid),
+		VideoID: input.VideoID,
+	}
+
+	if err := db.Create(&like).Error;err != nil {
+		c.JSON(400,gin.H{"error":"不能重复点赞"})
+		return
+	}
+
+	db.Model(&models.Video{}).Where("id = ?", input.VideoID).UpdateColumn("likes_count", gorm.Expr("likes_count + 1"))
+	c.JSON(200,gin.H{"message":"点赞成功"})
+
 }
