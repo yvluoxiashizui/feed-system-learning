@@ -20,7 +20,7 @@ func main() {
 	}
 
 	// 自动建表
-	db.AutoMigrate(&models.User{}, &models.Video{}, &models.Like{})
+	db.AutoMigrate(&models.User{}, &models.Video{}, &models.Like{}, &models.Follow{})
 
 	// 数据库连接注入 handlers 层
 	handlers.SetDB(db)
@@ -39,6 +39,7 @@ func main() {
 	r.GET("/videos", handlers.ListVideos)
 	r.GET("/video/detail", handlers.GetVideoDetail)
 	r.POST("/video/like", handlers.Auth, handlers.LikeVideo)
+	r.POST("/social/follow", handlers.Auth, handlers.FollowUser)
 
 	// Feed 预览页
 	r.StaticFile("/", "preview.html")
