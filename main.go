@@ -37,6 +37,7 @@ func main() {
 	})
 	r.POST("/video/publish", handlers.Auth, handlers.PublishVideo)
 	r.GET("/videos", handlers.ListVideos)
+	r.GET("/video/detail", handlers.GetVideoDetail)
 
 	// Feed 预览页
 	r.StaticFile("/", "preview.html")

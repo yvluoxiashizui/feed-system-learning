@@ -53,3 +53,13 @@ func ListVideos(c *gin.Context) {
 	db.Order("id DESC").Limit(limit).Offset(offset).Find(&videos)
 	c.JSON(http.StatusOK, videos)
 }
+
+func GetVideoDetail(c *gin.Context) {
+	id := c.Query("id")
+	var video models.Video
+	if err := db.Where("id = ?",id).First(&video).Error;err != nil{
+		c.JSON(404,gin.H{"error":"视频不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, video)
+}
