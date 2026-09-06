@@ -106,18 +106,15 @@ hey -n 2000 -c 100 http://localhost:8080/videos
 
 ```
 feed/
-├── main.go              # 入口：连接数据库/Redis、建表、注册路由
-├── models/              # 数据模型（结构体 ↔ 数据库表）
-│   ├── user.go          # User 用户表
-│   ├── video.go         # Video 视频表
-│   ├── like.go          # Like 点赞表
-│   └── follow.go        # Follow 关注表
-├── handlers/            # 业务处理
-│   ├── user.go          # 注册 / 登录 / 查用户
-│   ├── video.go         # 发布视频 / Feed / 详情 / 点赞 / 热榜
-│   ├── follow.go        # 关注 / 取关 / 是否已关注 / 关注流
-│   ├── comment.go       # 发表评论 / 评论列表
-│   ├── redis.go         # Redis 客户端连接
+├── main.go              # 入口：连接数据库/Redis、建表、注入分层、注册路由
+├── models/              # 数据模型（entity：结构体 ↔ 数据库表）
+│   ├── user.go / video.go / like.go / follow.go / comment.go
+├── repos/               # 数据访问层（repository）：所有 MySQL 操作
+│   ├── db.go / user_repo.go / video_repo.go / like_repo.go / follow_repo.go / comment_repo.go
+├── services/            # 业务逻辑层（service）：业务编排 + Redis 缓存
+│   ├── redis.go / user_service.go / video_service.go / follow_service.go / comment_service.go
+├── handlers/            # 接口层（handler）：收请求、调 service、返回 JSON + 中间件
+│   ├── user.go / video.go / follow.go / comment.go
 │   ├── auth.go          # JWT 鉴权中间件
 │   └── logger.go        # 日志中间件
 └── preview.html         # Feed 预览页

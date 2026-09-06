@@ -2,46 +2,42 @@ package handlers
 
 import (
 	"strconv"
-	"feed/models"
+
 	"github.com/gin-gonic/gin"
+
+	"feed/services"
 )
 
+// PublishComment 发表评论（需登录）
 func PublishComment(c *gin.Context) {
 	userID := c.GetString("user_id")
-	uid,_ := strconv.ParseUint(userID ,10,64)
+	uid, _ := strconv.ParseUint(userID, 10, 64)
 
 	var input struct {
-		VideoID uint `json:"video_id"`
+		VideoID uint   `json:"video_id"`
 		Content string `json:"content"`
 	}
-	if err := c.ShouldBindJSON(&input);err != nil {
-		c.JSON(400,gin.H{"error":"评论失败"})
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(400, gin.H{"error": "参数错误"})
 		return
 	}
 
-	var author models.User
-	if err := db.Where("id = ?",uid).First(&author).Error; err != nil {
-		c.JSON(401, gin.H{"error": "用户不存在"})
+	comment, err := services.PublishComment(uint(uid), input.VideoID, input.Content)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-
-	comment := models.Comment{
-		UserID: uint(uid),
-		Username: author.Username,
-		VideoID:input.VideoID,
-		Content:input.Content,
-	}
-	if err := db.Create(&comment).Error; err != nil {
-		c.JSON(500, gin.H{"error": "发布失败"})
-		return
-	}
-	c.JSON(200,comment)
+	c.JSON(200, comment)
 }
 
+// ListComments 评论列表
 func ListComments(c *gin.Context) {
-	videoID, _ := strconv.ParseUint(c.Query("video_id"),10,64)
+	videoID, _ := strconv.ParseUint(c.Query("video_id"), 10, 64)
 
-	var comments []models.Comment
-	db.Where("video_id = ?",videoID).Order("id DESC").Find(&comments)
-	c.JSON(200,comments)
+	comments, err := services.ListComments(uint(videoID))
+	if err != nil {
+		c.JSON(500, gin.H{"error": "获取失败"})
+		return
+	}
+	c.JSON(200, comments)
 }

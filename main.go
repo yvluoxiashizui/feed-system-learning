@@ -10,6 +10,8 @@ import (
 
 	"feed/handlers"
 	"feed/models"
+	"feed/repos"
+	"feed/services"
 )
 
 func main() {
@@ -21,14 +23,14 @@ func main() {
 	}
 
 	// 自动建表
-	db.AutoMigrate(&models.User{}, &models.Video{}, &models.Like{}, &models.Follow{},&models.Comment{})
+	db.AutoMigrate(&models.User{}, &models.Video{}, &models.Like{}, &models.Follow{}, &models.Comment{})
 
-	// 数据库连接注入 handlers 层
-	handlers.SetDB(db)
+	// 数据库连接注入 repos 数据层
+	repos.SetDB(db)
 
-	//Redis创建客户端
+	// 创建 Redis 客户端，注入 services 业务层
 	rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
-	handlers.SetRedis(rdb)
+	services.SetRedis(rdb)
 
 	// 注册路由
 	r := gin.Default()
@@ -49,7 +51,7 @@ func main() {
 	r.GET("/social/isFollowing", handlers.Auth, handlers.IsFollowing)
 	r.GET("/feed/following", handlers.Auth, handlers.FollowingFeed)
 	r.GET("/feed/hot", handlers.HotVideos)
-	r.POST("/comment/publish",handlers.Auth,handlers.PublishComment)
+	r.POST("/comment/publish", handlers.Auth, handlers.PublishComment)
 	r.GET("/comment/list", handlers.ListComments)
 
 	// Feed 预览页
