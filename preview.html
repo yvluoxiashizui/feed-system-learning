@@ -22,8 +22,9 @@
 <script>
 fetch('/videos')
   .then(r => r.json())
-  .then(videos => {
+  .then(data => {
     const list = document.getElementById('list');
+    const videos = data.videos || [];
     if (!videos.length) {
       list.innerHTML = '<div class="empty">还没有视频，去发一个吧～</div>';
       return;
@@ -33,7 +34,7 @@ fetch('/videos')
         <div class="title">${v.title}</div>
         <div class="meta">@${v.username} · 点赞 ${v.likes_count}</div>
         <div class="url">${v.play_url}</div>
-      </div>`).join('');
+      </div>`).join('') + '<div class="meta" style="text-align:center">— 到底了 —</div>';
   })
   .catch(e => {
     document.getElementById('list').innerHTML = '<div class="empty">加载失败，后端启动了吗？</div>';
