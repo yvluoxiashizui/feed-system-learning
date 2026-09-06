@@ -61,3 +61,25 @@ func IsFollowing(c *gin.Context) {
 
 	c.JSON(200,gin.H{"is_following":isFollowing})
 }
+
+func FollowingFeed(c *gin.Context) {
+	userID := c.GetString("user_id")
+	uid, _ := strconv.ParseUint(userID, 10, 64)
+
+	var follows []models.Follow
+	db.Where("follower_id = ?",uid).Find(&follows)
+
+	var vloggerIDs []uint
+	for _,f := range follows {
+		vloggerIDs = append(vloggerIDs, f.VloggerID)
+	}
+
+	var videos []models.Video
+	if len(vloggerIDs) == 0 {
+      c.JSON(200, []models.Video{})   // 返回空列表
+      return
+	}
+	db.Where("author_id IN ?",vloggerIDs).Order("id DESC").Find(&videos)
+
+	c.JSON(200,videos)
+}

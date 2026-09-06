@@ -42,6 +42,7 @@ func main() {
 	r.POST("/social/follow", handlers.Auth, handlers.FollowUser)
 	r.POST("/social/unfollow", handlers.Auth, handlers.Unfollow)
 	r.GET("/social/isFollowing", handlers.Auth, handlers.IsFollowing)
+	r.GET("/feed/following", handlers.Auth, handlers.FollowingFeed)
 
 	// Feed 预览页
 	r.StaticFile("/", "preview.html")
