@@ -21,7 +21,7 @@ func main() {
 	}
 
 	// 自动建表
-	db.AutoMigrate(&models.User{}, &models.Video{}, &models.Like{}, &models.Follow{})
+	db.AutoMigrate(&models.User{}, &models.Video{}, &models.Like{}, &models.Follow{},&models.Comment{})
 
 	// 数据库连接注入 handlers 层
 	handlers.SetDB(db)
@@ -49,6 +49,8 @@ func main() {
 	r.GET("/social/isFollowing", handlers.Auth, handlers.IsFollowing)
 	r.GET("/feed/following", handlers.Auth, handlers.FollowingFeed)
 	r.GET("/feed/hot", handlers.HotVideos)
+	r.POST("/comment/publish",handlers.Auth,handlers.PublishComment)
+	r.GET("/comment/list", handlers.ListComments)
 
 	// Feed 预览页
 	r.StaticFile("/", "preview.html")
