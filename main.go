@@ -29,7 +29,7 @@ func main() {
 	//Redis创建客户端
 	rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
 	handlers.SetRedis(rdb)
-	
+
 	// 注册路由
 	r := gin.Default()
 	r.Use(handlers.Logger)
@@ -48,6 +48,7 @@ func main() {
 	r.POST("/social/unfollow", handlers.Auth, handlers.Unfollow)
 	r.GET("/social/isFollowing", handlers.Auth, handlers.IsFollowing)
 	r.GET("/feed/following", handlers.Auth, handlers.FollowingFeed)
+	r.GET("/feed/hot", handlers.HotVideos)
 
 	// Feed 预览页
 	r.StaticFile("/", "preview.html")

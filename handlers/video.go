@@ -104,7 +104,43 @@ func LikeVideo(c *gin.Context) {
 		return
 	}
 
-	db.Model(&models.Video{}).Where("id = ?", input.VideoID).UpdateColumn("likes_count", gorm.Expr("likes_count + 1"))
-	c.JSON(200,gin.H{"message":"点赞成功"})
+	ctx := context.Background()
 
+	db.Model(&models.Video{}).Where("id = ?", input.VideoID).UpdateColumn("likes_count", gorm.Expr("likes_count + 1"))
+	rdb.ZIncrBy(ctx, "hot:videos", 1, strconv.Itoa(int(input.VideoID))).Err()
+	c.JSON(200,gin.H{"message":"点赞成功"})
+}
+
+//热榜接口
+func HotVideos(c *gin.Context) {
+	ctx := context.Background()
+
+	ids, _ := rdb.ZRevRange(ctx, "hot:videos", 0, 9).Result()
+	if len(ids) == 0{
+		c.JSON(200,[]models.Video{})
+		return
+	}
+
+	var videoIDs []uint
+	for _, id := range ids {
+		n, _ := strconv.ParseUint(id,10,64)
+		videoIDs = append(videoIDs,uint(n))
+	}
+	
+	var videos []models.Video
+	db.Where("id IN ?",videoIDs).Find(&videos)
+
+	//存map,按videoIDs顺序重排
+	videoMap := map[uint]models.Video{}
+	for _,v := range videos {
+		videoMap[v.ID] = v
+	}
+
+	result := []models.Video{}
+	for _,id := range videoIDs {
+		if v,ok := videoMap[id]; ok {
+			result = append(result, v)
+		}
+	}
+	c.JSON(200,result)
 }
