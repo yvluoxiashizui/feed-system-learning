@@ -1,6 +1,6 @@
 # feedsystem
 
-基于 Go + Gin + Redis + MySQL 的短视频 Feed 流系统（简化版）。参考 [LeoninCS/feedsystem_video_go](https://github.com/LeoninCS/feedsystem_video_go) 实现核心闭环：用户注册登录、视频发布、Feed 流浏览、点赞、关注、热榜。暂未包含原项目的 RabbitMQ 异步、私信、通知等模块。
+基于 Go + Gin + Redis + MySQL 的短视频 Feed 流系统（简化版）。参考 [LeoninCS/feedsystem_video_go](https://github.com/LeoninCS/feedsystem_video_go) 实现核心闭环：用户注册登录、视频发布、Feed 流浏览、点赞、评论、关注、热榜。暂未包含原项目的 RabbitMQ 异步、私信、通知等模块。
 
 ## 功能
 
@@ -9,6 +9,7 @@
 | 用户 | 注册、登录、JWT 签发与鉴权、按 ID 查用户 |
 | 视频 | 发布视频（需登录）、Feed 流列表（分页 + Redis 缓存）、视频详情 |
 | 点赞 | 点赞（复合唯一索引防重复）、点赞数原子自增、热度累计 |
+| 评论 | 发表评论、评论列表 |
 | 关注 | 关注、取关、判断是否已关注、关注流（拉模式） |
 | 热榜 | Redis ZSET 视频热度排行 |
 | 中间件 | 请求日志、Auth JWT 鉴权 |
@@ -61,6 +62,12 @@ go run .
 |------|------|------|------|
 | POST | `/video/like` | JWT | 点赞（重复返回 400），同步累计热度 |
 
+### 评论
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| POST | `/comment/publish` | JWT | 发表评论 |
+| GET | `/comment/list?video_id=` | 否 | 视频的评论列表 |
+
 ### 关注
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
@@ -109,6 +116,7 @@ feed/
 │   ├── user.go          # 注册 / 登录 / 查用户
 │   ├── video.go         # 发布视频 / Feed / 详情 / 点赞 / 热榜
 │   ├── follow.go        # 关注 / 取关 / 是否已关注 / 关注流
+│   ├── comment.go       # 发表评论 / 评论列表
 │   ├── redis.go         # Redis 客户端连接
 │   ├── auth.go          # JWT 鉴权中间件
 │   └── logger.go        # 日志中间件
