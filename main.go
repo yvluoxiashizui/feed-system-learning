@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
@@ -25,6 +26,10 @@ func main() {
 	// 数据库连接注入 handlers 层
 	handlers.SetDB(db)
 
+	//Redis创建客户端
+	rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+	handlers.SetRedis(rdb)
+	
 	// 注册路由
 	r := gin.Default()
 	r.Use(handlers.Logger)

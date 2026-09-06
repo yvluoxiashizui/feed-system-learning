@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"strconv"
-
+	"context"
+	"time"
+	
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-
+	
 	"feed/models"
+	"encoding/json"
 )
 
 // PublishVideo 发布视频（需登录）
@@ -46,11 +49,26 @@ func PublishVideo(c *gin.Context) {
 
 // ListVideos Feed 流列表，分页，最新在前
 func ListVideos(c *gin.Context) {
+	ctx := context.Background()
+	key := "feed:videos"
+
+	//查Redis缓存
+	val,err := rdb.Get(ctx,key).Result()
+	if err == nil {
+		var cached []models.Video
+		json.Unmarshal([]byte(val),&cached)
+		c.JSON(200,cached)
+		return
+	}
+
+	//没命中查mySQL
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
-
 	var videos []models.Video
 	db.Order("id DESC").Limit(limit).Offset(offset).Find(&videos)
+	data,_ := json.Marshal(videos)
+	rdb.Set(ctx,key,data,30*time.Second)
+	
 	c.JSON(200, videos)
 }
 
