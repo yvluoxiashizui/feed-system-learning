@@ -46,3 +46,18 @@ func Unfollow(c *gin.Context) {
 	c.JSON(200,gin.H{"message":"已取关"})
 
 }
+
+func IsFollowing(c *gin.Context) {
+	userID := c.GetString("user_id")
+	uid, _ := strconv.ParseUint(userID, 10, 64)
+	targetID,_ := strconv.ParseUint(c.Query("vlogger_id"),10,64)
+
+	var count int64
+	db.Model(&models.Follow{}).
+		Where("follower_id = ? AND vlogger_id = ?",uid,targetID).
+		Count(&count)
+
+	isFollowing := count > 0
+
+	c.JSON(200,gin.H{"is_following":isFollowing})
+}

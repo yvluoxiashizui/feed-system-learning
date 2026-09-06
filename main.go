@@ -41,6 +41,7 @@ func main() {
 	r.POST("/video/like", handlers.Auth, handlers.LikeVideo)
 	r.POST("/social/follow", handlers.Auth, handlers.FollowUser)
 	r.POST("/social/unfollow", handlers.Auth, handlers.Unfollow)
+	r.GET("/social/isFollowing", handlers.Auth, handlers.IsFollowing)
 
 	// Feed 预览页
 	r.StaticFile("/", "preview.html")
