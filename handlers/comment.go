@@ -10,8 +10,7 @@ import (
 
 // PublishComment 发表评论（需登录）
 func PublishComment(c *gin.Context) {
-	userID := c.GetString("user_id")
-	uid, _ := strconv.ParseUint(userID, 10, 64)
+	uid := currentUID(c)
 
 	var input struct {
 		VideoID uint   `json:"video_id"`

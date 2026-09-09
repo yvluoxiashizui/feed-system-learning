@@ -10,8 +10,7 @@ import (
 
 // FollowUser 关注用户（需登录）
 func FollowUser(c *gin.Context) {
-	userID := c.GetString("user_id")
-	uid, _ := strconv.ParseUint(userID, 10, 64)
+	uid := currentUID(c)
 
 	var input struct {
 		VloggerID uint `json:"vlogger_id"`
@@ -27,8 +26,7 @@ func FollowUser(c *gin.Context) {
 
 // Unfollow 取消关注（需登录）
 func Unfollow(c *gin.Context) {
-	userID := c.GetString("user_id")
-	uid, _ := strconv.ParseUint(userID, 10, 64)
+	uid := currentUID(c)
 
 	var input struct {
 		VloggerID uint `json:"vlogger_id"`
@@ -44,8 +42,7 @@ func Unfollow(c *gin.Context) {
 
 // IsFollowing 判断是否已关注（需登录）
 func IsFollowing(c *gin.Context) {
-	userID := c.GetString("user_id")
-	uid, _ := strconv.ParseUint(userID, 10, 64)
+	uid := currentUID(c)
 	targetID, _ := strconv.ParseUint(c.Query("vlogger_id"), 10, 64)
 
 	following, err := services.IsFollowing(uint(uid), uint(targetID))
@@ -58,8 +55,7 @@ func IsFollowing(c *gin.Context) {
 
 // FollowingFeed 关注流（需登录）
 func FollowingFeed(c *gin.Context) {
-	userID := c.GetString("user_id")
-	uid, _ := strconv.ParseUint(userID, 10, 64)
+	uid := currentUID(c)
 
 	videos, err := services.FollowingFeed(uint(uid))
 	if err != nil {

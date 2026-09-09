@@ -10,8 +10,7 @@ import (
 
 // PublishVideo 发布视频（需登录）
 func PublishVideo(c *gin.Context) {
-	userID := c.GetString("user_id")
-	uid, _ := strconv.ParseUint(userID, 10, 64)
+	uid := currentUID(c)
 
 	var input struct {
 		Title   string `json:"title"`
@@ -57,8 +56,7 @@ func GetVideoDetail(c *gin.Context) {
 
 // LikeVideo 点赞（需登录）
 func LikeVideo(c *gin.Context) {
-	userID := c.GetString("user_id")
-	uid, _ := strconv.ParseUint(userID, 10, 64)
+	uid := currentUID(c)
 
 	var input struct {
 		VideoID uint `json:"video_id"`
