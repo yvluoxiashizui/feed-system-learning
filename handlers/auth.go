@@ -5,6 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+
+	"feed/services"
 )
 
 // Auth JWT 鉴权中间件，验证通过才放行
@@ -18,7 +20,7 @@ func Auth(c *gin.Context) {
 
 	// 解析并验证签名
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-		return []byte("feed-secret-key"), nil
+		return []byte(services.JwtSecret), nil
 	})
 	if err != nil || !token.Valid {
 		c.JSON(401, gin.H{"error": "token 无效"})

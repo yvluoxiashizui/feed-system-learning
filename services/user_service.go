@@ -49,7 +49,7 @@ func Login(username, password string) (string, *models.User, error) {
 		"username": u.Username,
 		"exp":      time.Now().Add(72 * time.Hour).Unix(),
 	})
-	tokenString, err := token.SignedString([]byte("feed-secret-key"))
+	tokenString, err := token.SignedString([]byte(JwtSecret))
 	if err != nil {
 		return "", nil, errors.New("签发失败")
 	}
