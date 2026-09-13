@@ -54,7 +54,7 @@ go run .
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | POST | `/video/publish` | JWT | 发布视频 |
-| GET | `/videos?limit=&offset=` | 否 | Feed 流列表（分页，Redis 缓存） |
+| GET | `/videos?limit=&cursor=` | 否 | Feed 流列表（游标分页，Redis 缓存 30s，返回 `next_cursor`） |
 | GET | `/video/detail?id=` | 否 | 视频详情 |
 
 ### 点赞
