@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -14,9 +16,22 @@ import (
 	"feed/services"
 )
 
+// env 读取环境变量，未设置时用兜底值（本地开发默认配置）
+func env(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
 func main() {
-	// 连接数据库（开发配置，生产环境建议改用环境变量）
-	dsn := "goapp:goapp123@tcp(127.0.0.1:3306)/feed?charset=utf8mb4&parseTime=True"
+	// 数据库连接参数全部来自环境变量，未设置时回退到本地开发默认值
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True",
+		env("FEED_DB_USER", "goapp"),
+		env("FEED_DB_PASSWORD", "goapp123"),
+		env("FEED_DB_ADDR", "127.0.0.1:3306"),
+		env("FEED_DB_NAME", "feed"),
+	)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("连接数据库失败: ", err)
@@ -29,7 +44,7 @@ func main() {
 	repos.SetDB(db)
 
 	// 创建 Redis 客户端，注入 services 业务层
-	rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+	rdb := redis.NewClient(&redis.Options{Addr: env("FEED_REDIS_ADDR", "localhost:6379")})
 	services.SetRedis(rdb)
 
 	// 注册路由

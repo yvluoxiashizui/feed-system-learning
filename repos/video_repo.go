@@ -50,9 +50,9 @@ func FindVideosByIDs(ids []uint) ([]models.Video, error) {
 }
 
 // FindVideosByAuthorIDs 按作者 id 列表查视频，最新在前
-func FindVideosByAuthorIDs(authorIDs []uint) ([]models.Video, error) {
+func FindVideosByAuthorIDs(authorIDs []uint, limit int) ([]models.Video, error) {
 	var videos []models.Video
-	if err := db.Where("author_id IN ?", authorIDs).Order("id DESC").Find(&videos).Error; err != nil {
+	if err := db.Where("author_id IN ?", authorIDs).Order("id DESC").Limit(limit).Find(&videos).Error; err != nil {
 		return nil, err
 	}
 	return videos, nil

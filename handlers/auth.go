@@ -27,7 +27,7 @@ func Auth(c *gin.Context) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-		return []byte(services.JwtSecret), nil
+		return services.Secret(), nil
 	})
 	if err != nil || !token.Valid {
 		c.JSON(401, gin.H{"error": "token 无效"})

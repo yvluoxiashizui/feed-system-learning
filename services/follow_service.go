@@ -35,5 +35,5 @@ func FollowingFeed(followerID uint) ([]models.Video, error) {
 	if len(ids) == 0 {
 		return []models.Video{}, nil
 	}
-	return repos.FindVideosByAuthorIDs(ids)
+	return repos.FindVideosByAuthorIDs(ids, 100)
 }
