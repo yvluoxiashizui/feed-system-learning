@@ -8,9 +8,9 @@ func CreateComment(c *models.Comment) error {
 }
 
 // ListCommentsByVideo 按视频查评论，最新在前
-func ListCommentsByVideo(videoID uint) ([]models.Comment, error) {
+func ListCommentsByVideo(videoID uint, limit int) ([]models.Comment, error) {
 	var comments []models.Comment
-	if err := db.Where("video_id = ?", videoID).Order("id DESC").Find(&comments).Error; err != nil {
+	if err := db.Where("video_id = ?", videoID).Order("id DESC").Limit(limit).Find(&comments).Error; err != nil {
 		return nil, err
 	}
 	return comments, nil

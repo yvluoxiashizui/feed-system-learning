@@ -22,5 +22,5 @@ func PublishComment(userID, videoID uint, content string) (*models.Comment, erro
 
 // ListComments 评论列表
 func ListComments(videoID uint) ([]models.Comment, error) {
-	return repos.ListCommentsByVideo(videoID)
+	return repos.ListCommentsByVideo(videoID, 200)
 }
