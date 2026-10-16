@@ -29,9 +29,27 @@ func PublishVideo(c *gin.Context) {
 	c.JSON(200, video)
 }
 
+// Feed 流分页参数边界
+const (
+	defaultFeedLimit = 10
+	maxFeedLimit     = 50
+)
+
+// parseLimit 收敛 limit：0 或负数会生成 LIMIT 0 / 无 LIMIT，超限则截断
+func parseLimit(raw string) int {
+	limit, err := strconv.Atoi(raw)
+	if err != nil || limit < 1 {
+		return defaultFeedLimit
+	}
+	if limit > maxFeedLimit {
+		return maxFeedLimit
+	}
+	return limit
+}
+
 // ListVideos Feed 流列表，游标分页
 func ListVideos(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	limit := parseLimit(c.DefaultQuery("limit", strconv.Itoa(defaultFeedLimit)))
 	cursor, _ := strconv.ParseUint(c.DefaultQuery("cursor", "0"), 10, 64)
 
 	page, err := services.ListFeed(uint(cursor), limit)
