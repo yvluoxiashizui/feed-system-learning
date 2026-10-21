@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 	"strconv"
 	"time"
 
@@ -12,6 +13,13 @@ import (
 )
 
 var ctx = context.Background()
+
+// cacheEnabled Feed 缓存开关，默认开启。
+// 压测时设置 FEED_CACHE_DISABLED=1 可关闭缓存读取与写入，
+// 用于在同一份代码上做「有缓存 / 无缓存」的读写路径对照。
+func cacheEnabled() bool {
+	return os.Getenv("FEED_CACHE_DISABLED") != "1"
+}
 
 // feedPage Feed 流分页数据（缓存用）
 type feedPage struct {
@@ -37,10 +45,12 @@ func ListFeed(cursor uint, limit int) (feedPage, error) {
 	key := "feed:videos:" + strconv.Itoa(int(cursor)) + ":" + strconv.Itoa(limit)
 
 	// 查缓存
-	if val, err := rdb.Get(ctx, key).Result(); err == nil {
-		var cached feedPage
-		json.Unmarshal([]byte(val), &cached)
-		return cached, nil
+	if cacheEnabled() {
+		if val, err := rdb.Get(ctx, key).Result(); err == nil {
+			var cached feedPage
+			json.Unmarshal([]byte(val), &cached)
+			return cached, nil
+		}
 	}
 
 	// 查库
@@ -54,8 +64,10 @@ func ListFeed(cursor uint, limit int) (feedPage, error) {
 	}
 
 	// 写缓存
-	data, _ := json.Marshal(page)
-	rdb.Set(ctx, key, data, 30*time.Second)
+	if cacheEnabled() {
+		data, _ := json.Marshal(page)
+		rdb.Set(ctx, key, data, 30*time.Second)
+	}
 	return page, nil
 }
 
