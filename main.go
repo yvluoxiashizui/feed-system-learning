@@ -48,7 +48,8 @@ func main() {
 	services.SetRedis(rdb)
 
 	// 注册路由
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
 	r.Use(handlers.Logger)
 	r.POST("/register", handlers.Register)
 	r.POST("/login", handlers.Login)
