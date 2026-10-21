@@ -73,5 +73,7 @@ func main() {
 	r.StaticFile("/", "preview.html")
 
 	// 启动服务
-	r.Run(":8080")
+	if err := r.Run(env("FEED_HTTP_ADDR", ":8080")); err != nil {
+		log.Fatal("启动服务失败: ", err)
+	}
 }
