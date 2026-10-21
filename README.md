@@ -88,17 +88,21 @@ go run .
 
 ## 性能压测
 
-使用 [k6](https://k6.io/) 对系统进行本地混合场景压测（50 并发 / 5000 请求，含约 30% 写操作）：
+使用 [k6](https://k6.io/) 做本地混合场景压测（50 并发 / 5000 次迭代，50% Feed 列表、20% 视频详情、30% 发评论）。环境、负载模型与局限见 [docs/performance-testing.md](docs/performance-testing.md)。
 
 | 方案 | RPS | P95 延迟 | 错误率 |
 |------|-----|---------|--------|
-| 无缓存（直接查 MySQL） | 5453 | 19.75 ms | 0% |
-| **Redis 缓存（Cache-Aside，30s 过期）** | **6684** | 18.27 ms | 0% |
+| 无缓存（直接查 MySQL） | ~4000 | 29–30 ms | 0% |
+| **Redis 缓存（Cache-Aside，30s 过期）** | **~5200** | **26 ms** | 0% |
 
-> 引入 Redis 缓存后 RPS 提升约 23%（本地实测）。以上为本地开发环境（服务与 MySQL/Redis 同机、无网络开销）结果，生产环境需结合实际机器与网络另行压测。
+> Feed 读路径本身：缓存关闭时平均 6.67 ms、P95 13.28 ms；开启后平均 2.36 ms、P95 5.97 ms。聚合 P95 由评论写路径（P95 39.67 ms）决定，读缓存对它没有作用。
 
 ```bash
 # 压测命令（k6）
+k6 run loadtest.js
+
+# 对照：关闭缓存
+FEED_CACHE_DISABLED=1 go run .
 k6 run loadtest.js
 ```
 
