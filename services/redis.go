@@ -9,3 +9,8 @@ var rdb *redis.Client
 func SetRedis(r *redis.Client) {
 	rdb = r
 }
+
+// PingRedis 探活 Redis
+func PingRedis() error {
+	return rdb.Ping(ctx).Err()
+}

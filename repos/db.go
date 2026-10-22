@@ -9,3 +9,12 @@ var db *gorm.DB
 func SetDB(d *gorm.DB) {
 	db = d
 }
+
+// Ping 探活数据库连接
+func Ping() error {
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Ping()
+}

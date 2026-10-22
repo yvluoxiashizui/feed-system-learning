@@ -63,6 +63,7 @@ func main() {
 	r.Use(handlers.Logger)
 	r.POST("/register", handlers.Register)
 	r.POST("/login", handlers.Login)
+	r.GET("/healthz", handlers.Health)
 	r.GET("/user", handlers.GetUser)
 	r.GET("/auth-test", handlers.Auth, func(c *gin.Context) {
 		userID := c.GetString("user_id")
