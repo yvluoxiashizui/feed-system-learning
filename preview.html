@@ -20,6 +20,13 @@
   <div id="list"><div class="empty">加载中...</div></div>
 
 <script>
+// 转义用户可控字段，避免标题或播放地址里带标签被当作 HTML 执行
+function esc(s) {
+  return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (ch) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+  });
+}
+
 fetch('/videos')
   .then(r => r.json())
   .then(data => {
@@ -31,9 +38,9 @@ fetch('/videos')
     }
     list.innerHTML = videos.map(v => `
       <div class="card">
-        <div class="title">${v.title}</div>
-        <div class="meta">@${v.username} · 点赞 ${v.likes_count}</div>
-        <div class="url">${v.play_url}</div>
+        <div class="title">${esc(v.title)}</div>
+        <div class="meta">@${esc(v.username)} · 点赞 ${esc(v.likes_count)}</div>
+        <div class="url">${esc(v.play_url)}</div>
       </div>`).join('') + '<div class="meta" style="text-align:center">— 到底了 —</div>';
   })
   .catch(e => {
