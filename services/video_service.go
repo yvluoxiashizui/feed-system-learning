@@ -135,13 +135,15 @@ func GetVideoDetail(id uint) (*models.Video, error) {
 	return repos.FindVideoByID(id)
 }
 
-// LikeVideo 点赞：插记录 + 计数自增 + 热度累计
+// LikeVideo 点赞：在一个事务里插记录并累加计数，再累加热度
 func LikeVideo(userID, videoID uint) error {
-	like := &models.Like{UserID: userID, VideoID: videoID}
-	if err := repos.CreateLike(like); err != nil {
+	duplicated, err := repos.LikeAndIncrement(userID, videoID)
+	if err != nil {
+		return err
+	}
+	if duplicated {
 		return errors.New("不能重复点赞")
 	}
-	repos.IncrementVideoLikes(videoID)
 	rdb.ZIncrBy(ctx, "hot:videos", 1, strconv.Itoa(int(videoID))).Err()
 	return nil
 }

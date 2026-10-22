@@ -1,14 +1,37 @@
 package repos
 
 import (
+	"errors"
+
+	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 
 	"feed/models"
 )
 
-// CreateLike 创建点赞记录，重复会因唯一索引报错
-func CreateLike(l *models.Like) error {
-	return db.Create(l).Error
+// isDuplicateKey 判断是否为唯一键冲突（MySQL 1062）
+func isDuplicateKey(err error) bool {
+	var me *mysql.MySQLError
+	return errors.As(err, &me) && me.Number == 1062
+}
+
+// LikeAndIncrement 在一个事务内插入点赞记录并累加计数。
+// duplicated 为 true 表示唯一索引冲突，即这个用户已经点过赞。
+func LikeAndIncrement(userID, videoID uint) (duplicated bool, err error) {
+	err = db.Transaction(func(tx *gorm.DB) error {
+		like := &models.Like{UserID: userID, VideoID: videoID}
+		if e := tx.Create(like).Error; e != nil {
+			if isDuplicateKey(e) {
+				duplicated = true
+				return nil
+			}
+			return e
+		}
+		return tx.Model(&models.Video{}).
+			Where("id = ?", videoID).
+			UpdateColumn("likes_count", gorm.Expr("likes_count + 1")).Error
+	})
+	return duplicated, err
 }
 
 // UnlikeAndDecrement 在一个事务内删除点赞记录并回退计数。
