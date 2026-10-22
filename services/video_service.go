@@ -135,8 +135,12 @@ func GetVideoDetail(id uint) (*models.Video, error) {
 	return repos.FindVideoByID(id)
 }
 
-// LikeVideo 点赞：在一个事务里插记录并累加计数，再累加热度
+// LikeVideo 点赞：先确认视频存在，再在一个事务里插记录并累加计数，最后累加热度
 func LikeVideo(userID, videoID uint) error {
+	if _, err := repos.FindVideoByID(videoID); err != nil {
+		return errors.New("视频不存在")
+	}
+
 	duplicated, err := repos.LikeAndIncrement(userID, videoID)
 	if err != nil {
 		return err
