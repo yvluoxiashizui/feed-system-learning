@@ -104,8 +104,9 @@ func ListFeed(cursor uint, limit int) (feedPage, error) {
 	return loadFeedPage(cursor, limit)
 }
 
-// feedPageFromWindow 从窗口里切出一页；切不出来时返回 false，交给调用方回源
-func feedPageFromWindow(ids []uint, cursor uint, limit int) (feedPage, bool) {
+// windowSlice 在窗口里切出一页 id。切不出来时返回 false：
+// 游标比窗口里最老的 id 还小，或者没凑满一页又已经到窗口末尾（可能被窗口截断）。
+func windowSlice(ids []uint, cursor uint, limit int) ([]uint, bool) {
 	start := 0
 	if cursor > 0 {
 		start = -1
@@ -116,7 +117,7 @@ func feedPageFromWindow(ids []uint, cursor uint, limit int) (feedPage, bool) {
 			}
 		}
 		if start < 0 {
-			return feedPage{}, false
+			return nil, false
 		}
 	}
 
@@ -128,6 +129,15 @@ func feedPageFromWindow(ids []uint, cursor uint, limit int) (feedPage, bool) {
 
 	// 没凑满又已经到窗口末尾，可能是窗口把真实结果截断了，回源保证正确
 	if len(pageIDs) < limit && end == len(ids) {
+		return nil, false
+	}
+	return pageIDs, true
+}
+
+// feedPageFromWindow 从窗口里切出一页；切不出来时返回 false，交给调用方回源
+func feedPageFromWindow(ids []uint, cursor uint, limit int) (feedPage, bool) {
+	pageIDs, ok := windowSlice(ids, cursor, limit)
+	if !ok {
 		return feedPage{}, false
 	}
 
