@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -36,6 +37,15 @@ func main() {
 	if err != nil {
 		log.Fatal("连接数据库失败: ", err)
 	}
+
+	// 配置连接池，避免并发下反复建连
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatal("获取数据库连接池失败: ", err)
+	}
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetMaxIdleConns(20)
+	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	// 自动建表
 	db.AutoMigrate(&models.User{}, &models.Video{}, &models.Like{}, &models.Follow{}, &models.Comment{})
