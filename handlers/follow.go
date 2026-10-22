@@ -15,7 +15,10 @@ func FollowUser(c *gin.Context) {
 	var input struct {
 		VloggerID uint `json:"vlogger_id"`
 	}
-	c.ShouldBindJSON(&input)
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(400, gin.H{"error": "参数错误"})
+		return
+	}
 
 	if err := services.Follow(uint(uid), input.VloggerID); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
@@ -31,7 +34,10 @@ func Unfollow(c *gin.Context) {
 	var input struct {
 		VloggerID uint `json:"vlogger_id"`
 	}
-	c.ShouldBindJSON(&input)
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(400, gin.H{"error": "参数错误"})
+		return
+	}
 
 	if err := services.Unfollow(uint(uid), input.VloggerID); err != nil {
 		c.JSON(400, gin.H{"error": "取关失败"})
