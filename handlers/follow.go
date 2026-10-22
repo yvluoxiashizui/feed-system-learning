@@ -59,14 +59,16 @@ func IsFollowing(c *gin.Context) {
 	c.JSON(200, gin.H{"is_following": following})
 }
 
-// FollowingFeed 关注流（需登录）
+// FollowingFeed 关注流（需登录），游标分页
 func FollowingFeed(c *gin.Context) {
 	uid := currentUID(c)
+	limit := parseLimit(c.DefaultQuery("limit", strconv.Itoa(defaultFeedLimit)))
+	cursor, _ := strconv.ParseUint(c.DefaultQuery("cursor", "0"), 10, 64)
 
-	videos, err := services.FollowingFeed(uint(uid))
+	page, err := services.FollowingFeed(uint(uid), uint(cursor), limit)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "获取失败"})
 		return
 	}
-	c.JSON(200, videos)
+	c.JSON(200, page)
 }

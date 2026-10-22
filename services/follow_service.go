@@ -40,14 +40,23 @@ func IsFollowing(followerID, vloggerID uint) (bool, error) {
 	return repos.IsFollowing(followerID, vloggerID)
 }
 
-// FollowingFeed 关注流：拉取关注博主的最新视频
-func FollowingFeed(followerID uint) ([]models.Video, error) {
+// FollowingFeed 关注流：拉取关注博主的最新视频，游标是视频 id
+func FollowingFeed(followerID, cursor uint, limit int) (feedPage, error) {
 	ids, err := repos.FindFollowingVloggerIDs(followerID)
 	if err != nil {
-		return nil, err
+		return feedPage{}, err
 	}
 	if len(ids) == 0 {
-		return []models.Video{}, nil
+		return feedPage{Videos: []models.Video{}}, nil
 	}
-	return repos.FindVideosByAuthorIDs(ids, 100)
+
+	videos, err := repos.FindVideosByAuthorIDs(ids, cursor, limit)
+	if err != nil {
+		return feedPage{}, err
+	}
+	page := feedPage{Videos: videos}
+	if len(videos) > 0 {
+		page.NextCursor = int(videos[len(videos)-1].ID)
+	}
+	return page, nil
 }
