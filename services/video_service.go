@@ -64,6 +64,10 @@ func PublishVideo(userID uint, title, playURL string) (*models.Video, error) {
 	if err := repos.CreateVideo(v); err != nil {
 		return nil, err
 	}
+
+	// 窗口只缓存一页 id 列表，发布后直接删掉这个 key，新视频立即可见
+	rdb.Del(ctx, feedWindowKey)
+
 	return v, nil
 }
 
