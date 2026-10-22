@@ -146,6 +146,25 @@ func LikeVideo(userID, videoID uint) error {
 	return nil
 }
 
+// UnlikeVideo 取消点赞：在一个事务里删记录并回退计数，再回退热度
+func UnlikeVideo(userID, videoID uint) error {
+	removed, err := repos.UnlikeAndDecrement(userID, videoID)
+	if err != nil {
+		return err
+	}
+	if !removed {
+		return errors.New("还没有点赞")
+	}
+
+	member := strconv.Itoa(int(videoID))
+	score, err := rdb.ZIncrBy(ctx, "hot:videos", -1, member).Result()
+	if err == nil && score <= 0 {
+		// 热度归零就从榜上摘掉，避免脏成员长期占位
+		rdb.ZRem(ctx, "hot:videos", member)
+	}
+	return nil
+}
+
 // HotVideos 热度 Top10
 func HotVideos() ([]models.Video, error) {
 	ids, _ := rdb.ZRevRange(ctx, "hot:videos", 0, 9).Result()

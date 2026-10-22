@@ -91,6 +91,25 @@ func LikeVideo(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "点赞成功"})
 }
 
+// UnlikeVideo 取消点赞（需登录）
+func UnlikeVideo(c *gin.Context) {
+	uid := currentUID(c)
+
+	var input struct {
+		VideoID uint `json:"video_id"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(400, gin.H{"error": "参数错误"})
+		return
+	}
+
+	if err := services.UnlikeVideo(uint(uid), input.VideoID); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"message": "已取消点赞"})
+}
+
 // HotVideos 热榜 Top10
 func HotVideos(c *gin.Context) {
 	videos, err := services.HotVideos()

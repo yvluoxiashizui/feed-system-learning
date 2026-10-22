@@ -72,6 +72,7 @@ func main() {
 	r.GET("/videos", handlers.ListVideos)
 	r.GET("/video/detail", handlers.GetVideoDetail)
 	r.POST("/video/like", handlers.Auth, handlers.LikeVideo)
+	r.POST("/video/unlike", handlers.Auth, handlers.UnlikeVideo)
 	r.POST("/social/follow", handlers.Auth, handlers.FollowUser)
 	r.POST("/social/unfollow", handlers.Auth, handlers.Unfollow)
 	r.GET("/social/isFollowing", handlers.Auth, handlers.IsFollowing)
