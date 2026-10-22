@@ -54,7 +54,7 @@ go run .
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | POST | `/video/publish` | JWT | 发布视频 |
-| GET | `/videos?limit=&cursor=` | 否 | Feed 流列表（游标分页，Redis 缓存 30s，返回 `next_cursor`） |
+| GET | `/videos?limit=&cursor=` | 否 | Feed 流列表（游标分页，Redis 缓存 30s 加抖动，返回 `next_cursor`） |
 | GET | `/video/detail?id=` | 否 | 视频详情 |
 
 ### 点赞
@@ -93,7 +93,7 @@ go run .
 | 方案 | RPS | P95 延迟 | 错误率 |
 |------|-----|---------|--------|
 | 无缓存（直接查 MySQL） | ~4000 | 29–30 ms | 0% |
-| **Redis 缓存（Cache-Aside，30s 过期）** | **~5200** | **26 ms** | 0% |
+| **Redis 缓存（Cache-Aside，30s 加抖动）** | **~5200** | **26 ms** | 0% |
 
 > Feed 读路径本身：缓存关闭时平均 6.67 ms、P95 13.28 ms；开启后平均 2.36 ms、P95 5.97 ms。聚合 P95 由评论写路径（P95 39.67 ms）决定，读缓存对它没有作用。
 
@@ -126,5 +126,5 @@ feed/
 
 ## 待办
 
-- [ ] 缓存穿透 / 击穿 / 雪崩防护
+- [x] 缓存穿透 / 击穿 / 雪崩防护
 - [ ] RabbitMQ 异步
