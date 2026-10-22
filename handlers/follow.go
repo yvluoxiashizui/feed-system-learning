@@ -40,7 +40,7 @@ func Unfollow(c *gin.Context) {
 	}
 
 	if err := services.Unfollow(uint(uid), input.VloggerID); err != nil {
-		c.JSON(400, gin.H{"error": "取关失败"})
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(200, gin.H{"message": "已取关"})

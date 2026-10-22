@@ -7,10 +7,14 @@ func CreateFollow(f *models.Follow) error {
 	return db.Create(f).Error
 }
 
-// DeleteFollow 删除关注关系
-func DeleteFollow(followerID, vloggerID uint) error {
-	return db.Where("follower_id = ? AND vlogger_id = ?", followerID, vloggerID).
-		Delete(&models.Follow{}).Error
+// DeleteFollow 删除关注关系，返回是否真的删掉了一条
+func DeleteFollow(followerID, vloggerID uint) (bool, error) {
+	res := db.Where("follower_id = ? AND vlogger_id = ?", followerID, vloggerID).
+		Delete(&models.Follow{})
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected > 0, nil
 }
 
 // IsFollowing 判断是否已关注
