@@ -110,6 +110,33 @@ func UnlikeVideo(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "已取消点赞"})
 }
 
+// IsVideoLiked 查询是否已点赞（需登录）
+func IsVideoLiked(c *gin.Context) {
+	uid := currentUID(c)
+	videoID, _ := strconv.ParseUint(c.Query("video_id"), 10, 64)
+
+	liked, err := services.IsLiked(uint(uid), uint(videoID))
+	if err != nil {
+		c.JSON(500, gin.H{"error": "查询失败"})
+		return
+	}
+	c.JSON(200, gin.H{"liked": liked})
+}
+
+// ListMyLikedVideos 我赞过的视频（需登录）
+func ListMyLikedVideos(c *gin.Context) {
+	uid := currentUID(c)
+	limit := parseLimit(c.DefaultQuery("limit", strconv.Itoa(defaultFeedLimit)))
+	cursor, _ := strconv.ParseUint(c.DefaultQuery("cursor", "0"), 10, 64)
+
+	page, err := services.LikedVideos(uint(uid), uint(cursor), limit)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "获取失败"})
+		return
+	}
+	c.JSON(200, page)
+}
+
 // HotVideos 热榜 Top10
 func HotVideos(c *gin.Context) {
 	videos, err := services.HotVideos()

@@ -35,3 +35,36 @@ func UnlikeAndDecrement(userID, videoID uint) (bool, error) {
 	}
 	return removed, nil
 }
+
+// IsLiked 判断用户是否已点赞
+func IsLiked(userID, videoID uint) (bool, error) {
+	var count int64
+	if err := db.Model(&models.Like{}).
+		Where("user_id = ? AND video_id = ?", userID, videoID).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// ListLikedVideoIDs 按点赞记录 id 倒序取用户赞过的视频 id，并返回下一页游标
+func ListLikedVideoIDs(userID, cursor uint, limit int) ([]uint, int, error) {
+	var likes []models.Like
+	query := db.Where("user_id = ?", userID).Order("id DESC").Limit(limit)
+	if cursor > 0 {
+		query = query.Where("id < ?", cursor)
+	}
+	if err := query.Find(&likes).Error; err != nil {
+		return nil, 0, err
+	}
+
+	ids := make([]uint, 0, len(likes))
+	for _, l := range likes {
+		ids = append(ids, l.VideoID)
+	}
+	next := 0
+	if len(likes) > 0 {
+		next = int(likes[len(likes)-1].ID)
+	}
+	return ids, next, nil
+}

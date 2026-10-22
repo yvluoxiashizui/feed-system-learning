@@ -165,6 +165,39 @@ func UnlikeVideo(userID, videoID uint) error {
 	return nil
 }
 
+// IsLiked 判断是否已点赞
+func IsLiked(userID, videoID uint) (bool, error) {
+	return repos.IsLiked(userID, videoID)
+}
+
+// LikedVideos 我赞过的视频，按点赞时间倒序，游标是点赞记录的 id
+func LikedVideos(userID, cursor uint, limit int) (feedPage, error) {
+	ids, next, err := repos.ListLikedVideoIDs(userID, cursor, limit)
+	if err != nil {
+		return feedPage{}, err
+	}
+	if len(ids) == 0 {
+		return feedPage{Videos: []models.Video{}}, nil
+	}
+
+	videos, err := repos.FindVideosByIDs(ids)
+	if err != nil {
+		return feedPage{}, err
+	}
+	byID := make(map[uint]models.Video, len(videos))
+	for _, v := range videos {
+		byID[v.ID] = v
+	}
+	// 按点赞顺序重排，视频表的返回顺序不可依赖
+	ordered := make([]models.Video, 0, len(ids))
+	for _, id := range ids {
+		if v, ok := byID[id]; ok {
+			ordered = append(ordered, v)
+		}
+	}
+	return feedPage{Videos: ordered, NextCursor: next}, nil
+}
+
 // HotVideos 热度 Top10
 func HotVideos() ([]models.Video, error) {
 	ids, _ := rdb.ZRevRange(ctx, "hot:videos", 0, 9).Result()
