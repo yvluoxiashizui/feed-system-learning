@@ -53,7 +53,7 @@ go run .
 ### 视频
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
-| POST | `/video/publish` | JWT | 发布视频 |
+| POST | `/video/publish` | JWT | 发布视频（标题 ≤100 字，播放地址 ≤500 字节） |
 | GET | `/videos?limit=&cursor=` | 否 | Feed 流列表（游标分页，Redis 缓存 30s 加抖动，返回 `next_cursor`） |
 | GET | `/video/detail?id=` | 否 | 视频详情 |
 
@@ -68,14 +68,14 @@ go run .
 ### 评论
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
-| POST | `/comment/publish` | JWT | 发表评论 |
+| POST | `/comment/publish` | JWT | 发表评论（≤500 字，视频需存在） |
 | GET | `/comment/list?video_id=` | 否 | 视频的评论列表 |
 
 ### 关注
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | POST | `/social/follow` | JWT | 关注（重复返回 400） |
-| POST | `/social/unfollow` | JWT | 取关 |
+| POST | `/social/unfollow` | JWT | 取关（未关注返回 400） |
 | GET | `/social/isFollowing?vlogger_id=` | JWT | 是否已关注 |
 | GET | `/feed/following` | JWT | 关注流（关注博主的最新视频） |
 
