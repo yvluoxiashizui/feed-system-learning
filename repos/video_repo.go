@@ -24,6 +24,18 @@ func ListVideosByCursor(cursor uint, limit int) ([]models.Video, error) {
 	return videos, nil
 }
 
+// ListRecentVideoIDs 取最近 N 条视频的 id，按 id 降序
+func ListRecentVideoIDs(limit int) ([]uint, error) {
+	ids := make([]uint, 0, limit)
+	if err := db.Model(&models.Video{}).
+		Order("id DESC").
+		Limit(limit).
+		Pluck("id", &ids).Error; err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
 // FindVideoByID 按 ID 查视频
 func FindVideoByID(id uint) (*models.Video, error) {
 	var v models.Video
