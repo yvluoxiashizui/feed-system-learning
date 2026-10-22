@@ -78,7 +78,14 @@ const (
 	feedWindowKey     = "feed:recent:ids"
 	feedCacheTTL      = 30 * time.Second
 	emptyFeedCacheTTL = 10 * time.Second
+	videoCachePrefix  = "video:"
+	videoObjectTTL    = 30 * time.Second
 )
+
+// cacheTTLWithJitter 给基础过期时间加随机抖动，避免同一批 key 同时失效
+func cacheTTLWithJitter(base time.Duration) time.Duration {
+	return base + time.Duration(rand.Int63n(int64(base/5)))
+}
 
 // feedSingle 同一 key 并发未命中时只放一个请求回源
 var feedSingle singleflight.Group
@@ -124,7 +131,7 @@ func feedPageFromWindow(ids []uint, cursor uint, limit int) (feedPage, bool) {
 		return feedPage{}, false
 	}
 
-	videos, err := repos.FindVideosByIDs(pageIDs)
+	videos, err := loadVideosByIDs(pageIDs)
 	if err != nil {
 		return feedPage{}, false
 	}
@@ -201,13 +208,83 @@ func writeFeedWindow(ids []uint) {
 	if len(ids) == 0 {
 		base = emptyFeedCacheTTL
 	}
-	jitter := time.Duration(rand.Int63n(int64(base / 5)))
-	rdb.Set(ctx, feedWindowKey, data, base+jitter)
+	rdb.Set(ctx, feedWindowKey, data, cacheTTLWithJitter(base))
 }
 
-// GetVideoDetail 视频详情
+// videoCacheKey 单个视频对象的缓存 key
+func videoCacheKey(id uint) string {
+	return videoCachePrefix + strconv.Itoa(int(id))
+}
+
+// loadVideosByIDs 按 id 列表取视频：先走对象缓存，未命中的批量查库并回填。
+// 返回顺序和传入 ids 一致，查不到的直接跳过。
+func loadVideosByIDs(ids []uint) ([]models.Video, error) {
+	if len(ids) == 0 {
+		return []models.Video{}, nil
+	}
+	if !cacheEnabled() {
+		return repos.FindVideosByIDs(ids)
+	}
+
+	keys := make([]string, len(ids))
+	for i, id := range ids {
+		keys[i] = videoCacheKey(id)
+	}
+	vals, err := rdb.MGet(ctx, keys...).Result()
+	if err != nil {
+		// 缓存不可用时直接查库，不影响正确性
+		return repos.FindVideosByIDs(ids)
+	}
+
+	found := make(map[uint]models.Video, len(ids))
+	missIDs := make([]uint, 0, len(ids))
+	for i, val := range vals {
+		s, ok := val.(string)
+		if !ok {
+			missIDs = append(missIDs, ids[i])
+			continue
+		}
+		var video models.Video
+		if err := json.Unmarshal([]byte(s), &video); err != nil {
+			missIDs = append(missIDs, ids[i])
+			continue
+		}
+		found[video.ID] = video
+	}
+
+	if len(missIDs) > 0 {
+		missVideos, err := repos.FindVideosByIDs(missIDs)
+		if err != nil {
+			return nil, err
+		}
+		ttl := cacheTTLWithJitter(videoObjectTTL)
+		for _, v := range missVideos {
+			found[v.ID] = v
+			if data, err := json.Marshal(v); err == nil {
+				rdb.Set(ctx, videoCacheKey(v.ID), data, ttl)
+			}
+		}
+	}
+
+	result := make([]models.Video, 0, len(ids))
+	for _, id := range ids {
+		if v, ok := found[id]; ok {
+			result = append(result, v)
+		}
+	}
+	return result, nil
+}
+
+// GetVideoDetail 视频详情，走视频对象缓存
 func GetVideoDetail(id uint) (*models.Video, error) {
-	return repos.FindVideoByID(id)
+	videos, err := loadVideosByIDs([]uint{id})
+	if err != nil {
+		return nil, err
+	}
+	if len(videos) == 0 {
+		return nil, errors.New("视频不存在")
+	}
+	return &videos[0], nil
 }
 
 // LikeVideo 点赞：先确认视频存在，再在一个事务里插记录并累加计数，最后累加热度
@@ -224,6 +301,8 @@ func LikeVideo(userID, videoID uint) error {
 		return errors.New("不能重复点赞")
 	}
 	rdb.ZIncrBy(ctx, "hot:videos", 1, strconv.Itoa(int(videoID))).Err()
+	// 点赞数变了，让这个视频的对象缓存失效
+	rdb.Del(ctx, videoCacheKey(videoID))
 	return nil
 }
 
@@ -243,6 +322,8 @@ func UnlikeVideo(userID, videoID uint) error {
 		// 热度归零就从榜上摘掉，避免脏成员长期占位
 		rdb.ZRem(ctx, "hot:videos", member)
 	}
+	// 点赞数变了，让这个视频的对象缓存失效
+	rdb.Del(ctx, videoCacheKey(videoID))
 	return nil
 }
 
