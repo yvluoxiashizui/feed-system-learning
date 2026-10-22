@@ -69,7 +69,7 @@ go run .
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | POST | `/comment/publish` | JWT | 发表评论（≤500 字，视频需存在） |
-| GET | `/comment/list?video_id=` | 否 | 视频的评论列表 |
+| GET | `/comment/list?video_id=&limit=&cursor=` | 否 | 视频的评论列表（游标分页，游标为评论 id） |
 
 ### 关注
 | 方法 | 路径 | 鉴权 | 说明 |
@@ -77,17 +77,18 @@ go run .
 | POST | `/social/follow` | JWT | 关注（重复返回 400） |
 | POST | `/social/unfollow` | JWT | 取关（未关注返回 400） |
 | GET | `/social/isFollowing?vlogger_id=` | JWT | 是否已关注 |
-| GET | `/feed/following` | JWT | 关注流（关注博主的最新视频） |
+| GET | `/feed/following?limit=&cursor=` | JWT | 关注流（关注博主的最新视频，游标分页） |
 
 ### Feed / 热榜
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | GET | `/feed/hot` | 否 | 视频热榜（Redis ZSET 热度排行） |
 
-### 测试
+### 测试与运维
 | 方法 | 路径 | 鉴权 | 说明 |
 |------|------|------|------|
 | GET | `/auth-test` | JWT | 测试 Auth 中间件 |
+| GET | `/healthz` | 否 | 健康检查（MySQL 不可用返回 503，Redis 不可用返回降级） |
 
 ## 性能压测
 
