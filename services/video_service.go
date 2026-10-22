@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"feed/models"
 	"feed/repos"
 )
@@ -47,6 +49,9 @@ const (
 	emptyFeedCacheTTL = 10 * time.Second
 )
 
+// feedSingle 同一 key 并发未命中时只放一个请求回源
+var feedSingle singleflight.Group
+
 // ListFeed 游标分页 Feed，带 Redis 缓存
 func ListFeed(cursor uint, limit int) (feedPage, error) {
 	key := feedCacheKey(cursor, limit)
@@ -58,16 +63,27 @@ func ListFeed(cursor uint, limit int) (feedPage, error) {
 		}
 	}
 
-	page, err := loadFeedPage(cursor, limit)
+	// 未命中时收敛：同一 key 同时只让一个请求查库，其余等它的结果
+	v, err, _ := feedSingle.Do(key, func() (interface{}, error) {
+		// 等锁期间可能已被前一个请求回填，再查一次缓存
+		if cacheEnabled() {
+			if page, ok := readFeedCache(key); ok {
+				return page, nil
+			}
+		}
+		page, err := loadFeedPage(cursor, limit)
+		if err != nil {
+			return feedPage{}, err
+		}
+		if cacheEnabled() {
+			writeFeedCache(key, page)
+		}
+		return page, nil
+	})
 	if err != nil {
 		return feedPage{}, err
 	}
-
-	// 写缓存：空结果也写，用来挡住重复的无效游标
-	if cacheEnabled() {
-		writeFeedCache(key, page)
-	}
-	return page, nil
+	return v.(feedPage), nil
 }
 
 func feedCacheKey(cursor uint, limit int) string {
