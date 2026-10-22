@@ -7,7 +7,9 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"golang.org/x/sync/singleflight"
 
@@ -30,8 +32,30 @@ type feedPage struct {
 	NextCursor int            `json:"next_cursor"`
 }
 
-// PublishVideo 发布视频（查作者、建记录）
+// 视频标题与播放地址的上限
+const (
+	maxVideoTitleLength = 100
+	maxPlayURLLength    = 500
+)
+
+// PublishVideo 发布视频：标题和播放地址不能为空，并按字符数限制长度
 func PublishVideo(userID uint, title, playURL string) (*models.Video, error) {
+	title = strings.TrimSpace(title)
+	playURL = strings.TrimSpace(playURL)
+
+	if title == "" {
+		return nil, errors.New("标题不能为空")
+	}
+	if utf8.RuneCountInString(title) > maxVideoTitleLength {
+		return nil, errors.New("标题最多 100 字")
+	}
+	if playURL == "" {
+		return nil, errors.New("播放地址不能为空")
+	}
+	if len(playURL) > maxPlayURLLength {
+		return nil, errors.New("播放地址过长")
+	}
+
 	author, err := repos.FindUserByID(userID)
 	if err != nil {
 		return nil, errors.New("用户不存在")

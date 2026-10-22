@@ -23,7 +23,7 @@ func PublishVideo(c *gin.Context) {
 
 	video, err := services.PublishVideo(uint(uid), input.Title, input.PlayURL)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(200, video)
