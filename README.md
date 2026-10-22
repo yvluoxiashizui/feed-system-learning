@@ -1,6 +1,6 @@
 # feedsystem
 
-基于 Go + Gin + Redis + MySQL 的短视频 Feed 流系统（简化版）。参考 [LeoninCS/feedsystem_video_go](https://github.com/LeoninCS/feedsystem_video_go) 实现核心闭环：用户注册登录、视频发布、Feed 流浏览、点赞、评论、关注、热榜。暂未包含原项目的 RabbitMQ 异步、私信、通知等模块。
+基于 Go + Gin + Redis + MySQL 的短视频 Feed 流系统。参考 [LeoninCS/feedsystem_video_go](https://github.com/LeoninCS/feedsystem_video_go) 实现核心闭环：用户注册登录、视频发布、Feed 流浏览、点赞、评论、关注、热榜。
 
 ## 功能
 
