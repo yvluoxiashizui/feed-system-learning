@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math/rand"
 	"os"
 	"strconv"
 	"time"
@@ -40,21 +41,41 @@ func PublishVideo(userID uint, title, playURL string) (*models.Video, error) {
 	return v, nil
 }
 
+// Feed 缓存过期时间基准。空结果取更短的值，避免新视频发布后被空值挡住。
+const (
+	feedCacheTTL      = 30 * time.Second
+	emptyFeedCacheTTL = 10 * time.Second
+)
+
 // ListFeed 游标分页 Feed，带 Redis 缓存
 func ListFeed(cursor uint, limit int) (feedPage, error) {
-	key := "feed:videos:" + strconv.Itoa(int(cursor)) + ":" + strconv.Itoa(limit)
+	key := feedCacheKey(cursor, limit)
 
 	// 查缓存；反序列化失败按未命中处理，回源查库
 	if cacheEnabled() {
-		if val, err := rdb.Get(ctx, key).Result(); err == nil {
-			var cached feedPage
-			if err := json.Unmarshal([]byte(val), &cached); err == nil {
-				return cached, nil
-			}
+		if page, ok := readFeedCache(key); ok {
+			return page, nil
 		}
 	}
 
-	// 查库
+	page, err := loadFeedPage(cursor, limit)
+	if err != nil {
+		return feedPage{}, err
+	}
+
+	// 写缓存：空结果也写，用来挡住重复的无效游标
+	if cacheEnabled() {
+		writeFeedCache(key, page)
+	}
+	return page, nil
+}
+
+func feedCacheKey(cursor uint, limit int) string {
+	return "feed:videos:" + strconv.Itoa(int(cursor)) + ":" + strconv.Itoa(limit)
+}
+
+// loadFeedPage 直接查库，并算出下一页游标
+func loadFeedPage(cursor uint, limit int) (feedPage, error) {
 	videos, err := repos.ListVideosByCursor(cursor, limit)
 	if err != nil {
 		return feedPage{}, err
@@ -63,13 +84,34 @@ func ListFeed(cursor uint, limit int) (feedPage, error) {
 	if len(videos) > 0 {
 		page.NextCursor = int(videos[len(videos)-1].ID)
 	}
-
-	// 写缓存
-	if cacheEnabled() {
-		data, _ := json.Marshal(page)
-		rdb.Set(ctx, key, data, 30*time.Second)
-	}
 	return page, nil
+}
+
+// readFeedCache 读缓存，反序列化失败按未命中处理
+func readFeedCache(key string) (feedPage, bool) {
+	val, err := rdb.Get(ctx, key).Result()
+	if err != nil {
+		return feedPage{}, false
+	}
+	var page feedPage
+	if err := json.Unmarshal([]byte(val), &page); err != nil {
+		return feedPage{}, false
+	}
+	return page, true
+}
+
+// writeFeedCache 写缓存，过期时间加随机抖动，避免同一批写入的 key 同时失效
+func writeFeedCache(key string, page feedPage) {
+	data, err := json.Marshal(page)
+	if err != nil {
+		return
+	}
+	base := feedCacheTTL
+	if len(page.Videos) == 0 {
+		base = emptyFeedCacheTTL
+	}
+	jitter := time.Duration(rand.Int63n(int64(base / 5)))
+	rdb.Set(ctx, key, data, base+jitter)
 }
 
 // GetVideoDetail 视频详情
