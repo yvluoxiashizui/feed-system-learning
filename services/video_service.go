@@ -44,12 +44,13 @@ func PublishVideo(userID uint, title, playURL string) (*models.Video, error) {
 func ListFeed(cursor uint, limit int) (feedPage, error) {
 	key := "feed:videos:" + strconv.Itoa(int(cursor)) + ":" + strconv.Itoa(limit)
 
-	// 查缓存
+	// 查缓存；反序列化失败按未命中处理，回源查库
 	if cacheEnabled() {
 		if val, err := rdb.Get(ctx, key).Result(); err == nil {
 			var cached feedPage
-			json.Unmarshal([]byte(val), &cached)
-			return cached, nil
+			if err := json.Unmarshal([]byte(val), &cached); err == nil {
+				return cached, nil
+			}
 		}
 	}
 
