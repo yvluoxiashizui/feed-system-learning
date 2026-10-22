@@ -7,10 +7,14 @@ func CreateComment(c *models.Comment) error {
 	return db.Create(c).Error
 }
 
-// ListCommentsByVideo 按视频查评论，最新在前
-func ListCommentsByVideo(videoID uint, limit int) ([]models.Comment, error) {
+// ListCommentsByVideo 按视频查评论，最新在前，游标是评论 id
+func ListCommentsByVideo(videoID, cursor uint, limit int) ([]models.Comment, error) {
 	var comments []models.Comment
-	if err := db.Where("video_id = ?", videoID).Order("id DESC").Limit(limit).Find(&comments).Error; err != nil {
+	query := db.Where("video_id = ?", videoID).Order("id DESC").Limit(limit)
+	if cursor > 0 {
+		query = query.Where("id < ?", cursor)
+	}
+	if err := query.Find(&comments).Error; err != nil {
 		return nil, err
 	}
 	return comments, nil

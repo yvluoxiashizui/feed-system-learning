@@ -29,14 +29,16 @@ func PublishComment(c *gin.Context) {
 	c.JSON(200, comment)
 }
 
-// ListComments 评论列表
+// ListComments 评论列表，游标分页
 func ListComments(c *gin.Context) {
 	videoID, _ := strconv.ParseUint(c.Query("video_id"), 10, 64)
+	limit := parseLimit(c.DefaultQuery("limit", strconv.Itoa(defaultFeedLimit)))
+	cursor, _ := strconv.ParseUint(c.DefaultQuery("cursor", "0"), 10, 64)
 
-	comments, err := services.ListComments(uint(videoID))
+	page, err := services.ListComments(uint(videoID), uint(cursor), limit)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "获取失败"})
 		return
 	}
-	c.JSON(200, comments)
+	c.JSON(200, page)
 }

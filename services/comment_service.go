@@ -36,7 +36,21 @@ func PublishComment(userID, videoID uint, content string) (*models.Comment, erro
 	return c, nil
 }
 
-// ListComments 评论列表
-func ListComments(videoID uint) ([]models.Comment, error) {
-	return repos.ListCommentsByVideo(videoID, 200)
+// commentPage 评论分页数据
+type commentPage struct {
+	Comments   []models.Comment `json:"comments"`
+	NextCursor int              `json:"next_cursor"`
+}
+
+// ListComments 评论列表，游标是评论 id
+func ListComments(videoID, cursor uint, limit int) (commentPage, error) {
+	comments, err := repos.ListCommentsByVideo(videoID, cursor, limit)
+	if err != nil {
+		return commentPage{}, err
+	}
+	page := commentPage{Comments: comments}
+	if len(comments) > 0 {
+		page.NextCursor = int(comments[len(comments)-1].ID)
+	}
+	return page, nil
 }
