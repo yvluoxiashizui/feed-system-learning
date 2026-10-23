@@ -28,6 +28,46 @@ func IsFollowing(followerID, vloggerID uint) (bool, error) {
 	return count > 0, nil
 }
 
+// CountFollowers 某作者的粉丝数
+func CountFollowers(vloggerID uint) (int64, error) {
+	var count int64
+	err := db.Model(&models.Follow{}).Where("vlogger_id = ?", vloggerID).Count(&count).Error
+	return count, err
+}
+
+// CountFollowersByIDs 批量统计多位作者的粉丝数，没有粉丝的不出现在结果里
+func CountFollowersByIDs(vloggerIDs []uint) (map[uint]int64, error) {
+	type row struct {
+		VloggerID uint
+		Total     int64
+	}
+	var rows []row
+	err := db.Model(&models.Follow{}).
+		Select("vlogger_id, count(*) as total").
+		Where("vlogger_id IN ?", vloggerIDs).
+		Group("vlogger_id").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[uint]int64, len(rows))
+	for _, r := range rows {
+		out[r.VloggerID] = r.Total
+	}
+	return out, nil
+}
+
+// FindFollowerIDs 某作者的所有粉丝 id
+func FindFollowerIDs(vloggerID uint) ([]uint, error) {
+	ids := make([]uint, 0, 64)
+	if err := db.Model(&models.Follow{}).
+		Where("vlogger_id = ?", vloggerID).
+		Pluck("follower_id", &ids).Error; err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
 // FindFollowingVloggerIDs 查出当前用户关注的所有博主 id
 func FindFollowingVloggerIDs(followerID uint) ([]uint, error) {
 	var follows []models.Follow

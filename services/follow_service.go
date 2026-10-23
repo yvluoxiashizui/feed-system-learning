@@ -20,6 +20,9 @@ func Follow(followerID, vloggerID uint) error {
 	if err := repos.CreateFollow(f); err != nil {
 		return errors.New("不能重复关注")
 	}
+
+	// 关注时回填对方最近的视频，否则只能看到关注之后发布的内容
+	backfillTimeline(followerID, vloggerID)
 	return nil
 }
 
@@ -32,6 +35,9 @@ func Unfollow(followerID, vloggerID uint) error {
 	if !removed {
 		return errors.New("还没有关注")
 	}
+
+	// 取关时把对方的视频从时间线里摘掉，避免读到已取关的人
+	clearAuthorFromTimeline(followerID, vloggerID)
 	return nil
 }
 

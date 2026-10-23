@@ -61,6 +61,30 @@ func FindVideosByIDs(ids []uint) ([]models.Video, error) {
 	return videos, nil
 }
 
+// FindRecentVideoIDsByAuthor 某作者最近的 N 条视频 id，降序
+func FindRecentVideoIDsByAuthor(authorID uint, limit int) ([]uint, error) {
+	ids := make([]uint, 0, limit)
+	if err := db.Model(&models.Video{}).
+		Where("author_id = ?", authorID).
+		Order("id DESC").
+		Limit(limit).
+		Pluck("id", &ids).Error; err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
+// FindVideoIDsByAuthor 某作者的全部视频 id
+func FindVideoIDsByAuthor(authorID uint) ([]uint, error) {
+	ids := make([]uint, 0, 64)
+	if err := db.Model(&models.Video{}).
+		Where("author_id = ?", authorID).
+		Pluck("id", &ids).Error; err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
 // FindVideosByAuthorIDs 按作者 id 列表查视频，最新在前，游标是视频 id
 func FindVideosByAuthorIDs(authorIDs []uint, cursor uint, limit int) ([]models.Video, error) {
 	var videos []models.Video
