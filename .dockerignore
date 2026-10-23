@@ -1,0 +1,5 @@
+.git
+.gitignore
+docs
+loadtest.js
+*.log

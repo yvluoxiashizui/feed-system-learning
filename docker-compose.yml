@@ -1,0 +1,80 @@
+services:
+  mysql:
+    image: mysql:8.4
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: feed
+      MYSQL_USER: goapp
+      MYSQL_PASSWORD: goapp123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot123"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    # guest 默认只允许本机连接，容器之间连会被拒，所以显式建一个用户
+    environment:
+      RABBITMQ_DEFAULT_USER: feed
+      RABBITMQ_DEFAULT_PASS: feed123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      FEED_HTTP_ADDR: ":8080"
+      FEED_DB_ADDR: "mysql:3306"
+      FEED_REDIS_ADDR: "redis:6379"
+      FEED_MQ_ADDR: "amqp://feed:feed123@rabbitmq:5672/"
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker:
+    build: .
+    restart: unless-stopped
+    entrypoint: ["/app/worker"]
+    environment:
+      FEED_DB_ADDR: "mysql:3306"
+      FEED_REDIS_ADDR: "redis:6379"
+      FEED_MQ_ADDR: "amqp://feed:feed123@rabbitmq:5672/"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
