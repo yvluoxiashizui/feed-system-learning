@@ -29,7 +29,7 @@
 ## 本地开发
 
 ```bash
-# 1. 建库（数据库连接配置在 main.go，本地开发使用）
+# 1. 建库（数据库连接配置在 bootstrap，默认本地开发值）
 mysql -u root -e "CREATE DATABASE feed CHARACTER SET utf8mb4;"
 mysql -u root < mysql-setup-feed.sql   # 建库建用户（可重复执行）
 
@@ -37,8 +37,9 @@ mysql -u root < mysql-setup-feed.sql   # 建库建用户（可重复执行）
 service redis-server start
 service rabbitmq-server start
 
-# 3. 启动
-go run .
+# 3. 启动 API 与 Worker（两个进程）
+go run ./cmd/api
+go run ./cmd/worker
 
 # 4. 预览页（刷 Feed）
 # 浏览器打开 http://localhost:8080/
@@ -123,7 +124,7 @@ go run .
 k6 run loadtest.js
 
 # 对照：关闭缓存
-FEED_CACHE_DISABLED=1 go run .
+FEED_CACHE_DISABLED=1 go run ./cmd/api
 k6 run loadtest.js
 ```
 
@@ -131,7 +132,10 @@ k6 run loadtest.js
 
 ```
 feed/
-├── main.go              # 入口：连接数据库/Redis、建表、注入分层、注册路由
+├── cmd/
+│   ├── api/main.go      # API 进程：连接依赖、建表、注册路由、投递扇出消息
+│   └── worker/main.go   # Worker 进程：消费扇出消息，断开后自动重连
+├── bootstrap/           # 两个进程共用的初始化：数据库连接池、Redis 客户端
 ├── models/              # 数据模型（entity：结构体 ↔ 数据库表）
 │   ├── user.go / video.go / like.go / follow.go / comment.go
 ├── repos/               # 数据访问层（repository）：所有 MySQL 操作
