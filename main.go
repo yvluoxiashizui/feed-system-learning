@@ -57,6 +57,13 @@ func main() {
 	rdb := redis.NewClient(&redis.Options{Addr: env("FEED_REDIS_ADDR", "localhost:6379")})
 	services.SetRedis(rdb)
 
+	// 写扩散走消息队列异步消费；连不上时退回同步扇出，服务照常启动
+	if err := services.SetupFanoutMQ(); err != nil {
+		log.Println("消息队列不可用，写扩散退回同步执行:", err)
+	} else {
+		log.Println("写扩散已切换为异步消费")
+	}
+
 	// 注册路由
 	r := gin.New()
 	r.Use(gin.Recovery())

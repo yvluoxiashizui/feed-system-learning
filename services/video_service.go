@@ -68,8 +68,11 @@ func PublishVideo(userID uint, title, playURL string) (*models.Video, error) {
 	// 窗口只缓存一页 id 列表，发布后直接删掉这个 key，新视频立即可见
 	rdb.Del(ctx, feedWindowKey)
 
-	// 粉丝数没超过阈值的作者，把视频写进每个粉丝的时间线；大 V 不推，读时再聚合
-	fanoutVideo(author.ID, v.ID)
+	// 写扩散移出主请求：投递给消费者异步执行；MQ 不可用时退回同步扇出，
+	// 保证发布接口在任何情况下都能完成，代价只是接口耗时变长
+	if err := publishFanout(author.ID, v.ID); err != nil {
+		fanoutVideo(author.ID, v.ID)
+	}
 
 	return v, nil
 }
