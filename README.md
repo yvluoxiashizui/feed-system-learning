@@ -25,6 +25,15 @@
 | 缓存 | Redis（go-redis） |
 | 消息队列 | RabbitMQ（amqp091-go），用于写扩散异步化 |
 | 认证 | JWT（golang-jwt）+ bcrypt |
+| 部署 | Docker Compose（MySQL / Redis / RabbitMQ / API / Worker） |
+
+## Docker Compose 一键启动
+
+```bash
+docker compose up -d --build
+```
+
+启动五个容器：MySQL、Redis、RabbitMQ、API、Worker。API 在 `http://localhost:8080`，RabbitMQ 管理台在 `http://localhost:15672`（`feed` / `feed123`）。
 
 ## 本地开发
 
@@ -148,7 +157,9 @@ feed/
 │   ├── user.go / video.go / follow.go / comment.go
 │   ├── auth.go          # JWT 鉴权中间件
 │   └── logger.go        # 日志中间件
-└── preview.html         # Feed 预览页
+├── preview.html         # Feed 预览页
+├── Dockerfile           # 多阶段构建，产出 api 与 worker 两个二进制
+└── docker-compose.yml   # 五个服务一键启动
 ```
 
 ## 待办
