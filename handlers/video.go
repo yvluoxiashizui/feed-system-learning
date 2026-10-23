@@ -146,3 +146,15 @@ func HotVideos(c *gin.Context) {
 	}
 	c.JSON(200, videos)
 }
+
+// LikesRank 点赞榜，复合游标分页（游标形如 20_111653）
+func LikesRank(c *gin.Context) {
+	limit := parseLimit(c.DefaultQuery("limit", strconv.Itoa(defaultFeedLimit)))
+
+	page, err := services.LikesRank(c.Query("cursor"), limit)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "获取失败"})
+		return
+	}
+	c.JSON(200, page)
+}

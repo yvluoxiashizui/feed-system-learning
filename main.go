@@ -88,6 +88,7 @@ func main() {
 	r.GET("/social/isFollowing", handlers.Auth, handlers.IsFollowing)
 	r.GET("/feed/following", handlers.Auth, handlers.FollowingFeed)
 	r.GET("/feed/hot", handlers.HotVideos)
+	r.GET("/feed/likes-rank", handlers.LikesRank)
 	r.POST("/comment/publish", handlers.Auth, handlers.PublishComment)
 	r.GET("/comment/list", handlers.ListComments)
 

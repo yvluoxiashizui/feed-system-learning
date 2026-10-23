@@ -61,6 +61,21 @@ func FindVideosByIDs(ids []uint) ([]models.Video, error) {
 	return videos, nil
 }
 
+// ListVideosByLikesCursor 点赞榜查询：点赞数更小，或者点赞数相同但 id 更小。
+// 排序字段不唯一，游标必须带上 id 才能保证不重不漏。
+func ListVideosByLikesCursor(cursorLikes int64, cursorID uint, limit int) ([]models.Video, error) {
+	var videos []models.Video
+	query := db.Order("likes_count DESC, id DESC").Limit(limit)
+	if cursorID > 0 {
+		query = query.Where("likes_count < ? OR (likes_count = ? AND id < ?)",
+			cursorLikes, cursorLikes, cursorID)
+	}
+	if err := query.Find(&videos).Error; err != nil {
+		return nil, err
+	}
+	return videos, nil
+}
+
 // FindRecentVideoIDsByAuthor 某作者最近的 N 条视频 id，降序
 func FindRecentVideoIDsByAuthor(authorID uint, limit int) ([]uint, error) {
 	ids := make([]uint, 0, limit)
