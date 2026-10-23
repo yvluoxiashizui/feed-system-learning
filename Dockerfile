@@ -1,5 +1,8 @@
 # 构建阶段：编译 API 与 Worker 两个二进制
 FROM golang:1.26-alpine AS builder
+# 模块代理可在构建时覆盖：docker compose build --build-arg GOPROXY=https://proxy.golang.org,direct
+ARG GOPROXY=https://goproxy.cn,direct
+ENV GOPROXY=${GOPROXY}
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
