@@ -22,6 +22,7 @@
 | Web 框架 | Gin |
 | 数据库 | MySQL + GORM |
 | 缓存 | Redis（go-redis） |
+| 消息队列 | RabbitMQ（amqp091-go），用于写扩散异步化 |
 | 认证 | JWT（golang-jwt）+ bcrypt |
 
 ## 本地开发
@@ -31,8 +32,9 @@
 mysql -u root -e "CREATE DATABASE feed CHARACTER SET utf8mb4;"
 mysql -u root < mysql-setup-feed.sql   # 建库建用户（可重复执行）
 
-# 2. 启动 Redis
+# 2. 启动 Redis 与 RabbitMQ
 service redis-server start
+service rabbitmq-server start
 
 # 3. 启动
 go run .
@@ -40,6 +42,19 @@ go run .
 # 4. 预览页（刷 Feed）
 # 浏览器打开 http://localhost:8080/
 ```
+
+常用环境变量：
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `FEED_HTTP_ADDR` | `:8080` | 监听地址 |
+| `FEED_DB_USER` / `FEED_DB_PASSWORD` / `FEED_DB_ADDR` / `FEED_DB_NAME` | 本地开发默认值 | MySQL 连接 |
+| `FEED_REDIS_ADDR` | `localhost:6379` | Redis 地址 |
+| `FEED_MQ_ADDR` | `amqp://guest:guest@127.0.0.1:5672/` | RabbitMQ 地址 |
+| `FEED_MQ_DISABLED` | 未设置 | 设为 `1` 时写扩散退回同步 |
+| `FEED_FANOUT_THRESHOLD` | `1000` | 粉丝数超过该值的作者走拉取 |
+| `FEED_CACHE_DISABLED` | 未设置 | 设为 `1` 时关闭 Feed 缓存 |
+| `FEED_ACCESS_LOG` | 未设置 | 设为 `0` 时关闭访问日志 |
 
 ## 接口清单
 
@@ -119,8 +134,10 @@ feed/
 │   ├── user.go / video.go / like.go / follow.go / comment.go
 ├── repos/               # 数据访问层（repository）：所有 MySQL 操作
 │   ├── db.go / user_repo.go / video_repo.go / like_repo.go / follow_repo.go / comment_repo.go
-├── services/            # 业务逻辑层（service）：业务编排 + Redis 缓存
+├── services/            # 业务逻辑层（service）：业务编排 + Redis 缓存 + 扇出
 │   ├── redis.go / user_service.go / video_service.go / follow_service.go / comment_service.go
+│   ├── timeline.go      # 关注时间线：写扩散、回填、取关清理
+│   └── mq.go            # 写扩散的消息投递与消费
 ├── handlers/            # 接口层（handler）：收请求、调 service、返回 JSON + 中间件
 │   ├── user.go / video.go / follow.go / comment.go
 │   ├── auth.go          # JWT 鉴权中间件
@@ -131,4 +148,5 @@ feed/
 ## 待办
 
 - [x] 缓存穿透 / 击穿 / 雪崩防护
-- [ ] RabbitMQ 异步
+- [x] RabbitMQ 异步（写扩散）
+- [ ] 消息消费失败监控与重放
