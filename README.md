@@ -13,7 +13,7 @@
 | 关注 | 关注、取关、判断是否已关注、关注流（推拉结合：小号写粉丝时间线，大 V 读时聚合） |
 | 热榜 | Redis ZSET 视频热度排行（Top10） |
 | 点赞榜 | 按点赞数排序，复合游标分页，（点赞数, id）联合索引 |
-| 中间件 | 请求日志、Auth JWT 鉴权 |
+| 中间件 | 请求日志、Auth JWT 鉴权、令牌桶限流（Redis + Lua，注册/登录/发布） |
 
 ## 技术栈
 
@@ -151,6 +151,7 @@ feed/
 │   ├── db.go / user_repo.go / video_repo.go / like_repo.go / follow_repo.go / comment_repo.go
 ├── services/            # 业务逻辑层（service）：业务编排 + Redis 缓存 + 扇出
 │   ├── redis.go / user_service.go / video_service.go / follow_service.go / comment_service.go
+│   ├── ratelimit.go     # 令牌桶限流（Lua 脚本保证取令牌与补令牌原子）
 │   ├── timeline.go      # 关注时间线：写扩散、回填、取关清理
 │   └── mq.go            # 写扩散的消息投递与消费
 ├── handlers/            # 接口层（handler）：收请求、调 service、返回 JSON + 中间件
